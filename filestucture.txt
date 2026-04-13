@@ -1,0 +1,92 @@
+quizmaster/
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── cd.yml
+│
+├── .vscode/
+│   ├── settings.json
+│   └── extensions.json
+│
+├── android/
+├── ios/
+│
+├── src/
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── LoginScreen.tsx
+│   │   │   ├── ForgotPasswordScreen.tsx
+│   │   │   ├── RoleSelectionScreen.tsx
+│   │   │   └── RegisterScreen.tsx
+│   │   ├── student/
+│   │   │   ├── StudentDashboard.tsx
+│   │   │   ├── AvailableQuizzesScreen.tsx
+│   │   │   ├── QuizAttemptScreen.tsx
+│   │   │   ├── QuizResultScreen.tsx
+│   │   │   └── PerformanceAnalyticsScreen.tsx
+│   │   ├── teacher/
+│   │   │   ├── TeacherDashboard.tsx
+│   │   │   ├── CreateQuizScreen.tsx
+│   │   │   ├── AddQuestionsScreen.tsx
+│   │   │   ├── ManageStudentsScreen.tsx
+│   │   │   └── ClassAnalyticsScreen.tsx
+│   │   └── common/
+│   │       ├── SplashScreen.tsx
+│   │       └── ProfileScreen.tsx
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── CustomButton.tsx
+│   │   │   ├── CustomInput.tsx
+│   │   │   └── CustomCard.tsx
+│   │   ├── quiz/
+│   │   │   ├── QuestionCard.tsx
+│   │   │   ├── OptionSelector.tsx
+│   │   │   └── Timer.tsx
+│   │   ├── charts/
+│   │   │   ├── PerformanceLineChart.tsx
+│   │   │   └── SubjectBarChart.tsx
+│   │   └── forms/
+│   │       ├── QuizForm.tsx
+│   │       └── QuestionForm.tsx
+│   │
+│   ├── services/
+│   │   ├── auth/
+│   │   │   ├── AuthService.ts
+│   │   │   └── SessionService.ts
+│   │   ├── quiz/
+│   │   │   ├── QuizService.ts
+│   │   │   ├── QuestionService.ts
+│   │   │   └── AttemptService.ts
+│   │   ├── analytics/
+│   │   │   ├── PerformanceService.ts
+│   │   │   └── ReportGenerator.ts
+│   │   └── utils/
+│   │       ├── ValidationUtils.ts
+│   │       ├── ErrorHandler.ts
+│   │       └── Constants.ts
+│   │
+│   ├── firebase/
+│   │   ├── config.ts
+│   │   ├── auth.ts
+│   │   ├── firestore.ts
+│   │   └── securityRules.ts
+│   │
+│   ├── store/
+│   │   ├── slices/
+│   │   │   ├── authSlice.ts
+│   │   │   ├── quizSlice.ts
+│   │   │   └── analyticsSlice.ts
+│   │   └── store.ts
+│   │
+│   ├── navigation/
+│   ├── hooks/
+│   ├── types/
+│   └── utils/
+│
+├── README.md
+├── FUNCTIONS.md
+├── ARCHITECTURE.md
+├── sql_shema.txt
+└── filestucture.txt

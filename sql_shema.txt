@@ -1,0 +1,160 @@
+## 📝 SQL Equivalent Schema (For Reference)
+
+If migrating to SQL database (PostgreSQL/MySQL), here is the equivalent schema:
+
+```sql
+-- Users table
+CREATE TABLE users (
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role ENUM('student', 'teacher', 'admin') NOT NULL,
+    class TINYINT CHECK (class BETWEEN 8 AND 10),
+    full_name VARCHAR(100) NOT NULL,
+    profile_picture TEXT,
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_role (role),
+    INDEX idx_class (class),
+    INDEX idx_username (username)
+);
+
+-- Quizzes table
+CREATE TABLE quizzes (
+    quiz_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    subject VARCHAR(50) NOT NULL,
+    class TINYINT CHECK (class BETWEEN 8 AND 10),
+    teacher_id UUID NOT NULL,
+    time_limit INT NOT NULL,
+    total_marks INT NOT NULL,
+    total_questions INT NOT NULL,
+    passing_percentage DECIMAL(5,2) NOT NULL,
+    is_published BOOLEAN DEFAULT false,
+    scheduled_for TIMESTAMP,
+    expires_at TIMESTAMP,
+    attempts_allowed INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (teacher_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_teacher (teacher_id),
+    INDEX idx_subject (subject),
+    INDEX idx_class (class),
+    INDEX idx_created (created_at DESC)
+);
+
+-- Questions table
+CREATE TABLE questions (
+    question_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quiz_id UUID NOT NULL,
+    question_text TEXT NOT NULL,
+    question_type ENUM('mcq', 'truefalse', 'numeric') DEFAULT 'mcq',
+    options JSON,
+    correct_answer VARCHAR(500) NOT NULL,
+    marks INT DEFAULT 1,
+    explanation TEXT,
+    image_url TEXT,
+    question_order INT NOT NULL,
+    difficulty ENUM('easy', 'medium', 'hard') DEFAULT 'medium',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    INDEX idx_quiz (quiz_id),
+    INDEX idx_order (question_order),
+    UNIQUE KEY unique_quiz_order (quiz_id, question_order)
+);
+
+-- Attempts table
+CREATE TABLE attempts (
+    attempt_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
+    quiz_id UUID NOT NULL,
+    subject VARCHAR(50) NOT NULL,
+    class TINYINT NOT NULL,
+    score INT NOT NULL,
+    total_marks INT NOT NULL,
+    percentage DECIMAL(5,2) NOT NULL,
+    passed BOOLEAN NOT NULL,
+    time_taken INT NOT NULL,
+    answers JSON NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP NOT NULL,
+    device_info VARCHAR(500),
+    FOREIGN KEY (student_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    INDEX idx_student (student_id),
+    INDEX idx_quiz (quiz_id),
+    INDEX idx_completed (completed_at DESC),
+    INDEX idx_student_subject (student_id, subject),
+    INDEX idx_student_completed (student_id, completed_at DESC),
+    INDEX idx_quiz_percentage (quiz_id, percentage DESC)
+);
+
+-- Feedback table
+CREATE TABLE feedback (
+    feedback_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quiz_id UUID NOT NULL,
+    student_id UUID NOT NULL,
+    rating TINYINT CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    difficulty ENUM('easy', 'medium', 'hard'),
+    is_anonymous BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_quiz (quiz_id),
+    INDEX idx_rating (rating)
+);
+
+-- Notifications table
+CREATE TABLE notifications (
+    notification_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('quiz_assigned', 'result', 'system') NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, is_read),
+    INDEX idx_created (created_at DESC)
+);
+
+-- Views for analytics
+CREATE VIEW student_performance_summary AS
+SELECT 
+    s.user_id,
+    s.username,
+    s.full_name,
+    s.class,
+    COUNT(DISTINCT a.quiz_id) as total_quizzes_taken,
+    AVG(a.percentage) as avg_percentage,
+    SUM(CASE WHEN a.passed THEN 1 ELSE 0 END) as quizzes_passed,
+    MAX(a.percentage) as best_score,
+    MIN(a.percentage) as worst_score
+FROM users s
+LEFT JOIN attempts a ON s.user_id = a.student_id
+WHERE s.role = 'student'
+GROUP BY s.user_id, s.username, s.full_name, s.class;
+
+-- Stored Procedure: Calculate Quiz Statistics
+DELIMITER $$
+CREATE PROCEDURE GetQuizStatistics(IN p_quiz_id UUID)
+BEGIN
+    SELECT 
+        COUNT(DISTINCT student_id) as total_attempts,
+        AVG(percentage) as average_score,
+        MAX(percentage) as highest_score,
+        MIN(percentage) as lowest_score,
+        SUM(CASE WHEN passed THEN 1 ELSE 0 END) as passed_count,
+        AVG(time_taken) as avg_time_taken
+    FROM attempts
+    WHERE quiz_id = p_quiz_id;
+END$$
+DELIMITER ;
+```
