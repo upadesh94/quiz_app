@@ -67,6 +67,31 @@ npm run ios
 - `npm run preview:web` -> `npx serve dist`
 - `npm run typecheck` -> TypeScript type checking
 
+## Deploy To Vercel
+
+This project is configured for Vercel using `vercel.json`.
+
+### Option 1: Deploy from GitHub (recommended)
+
+1. Push your code to GitHub.
+2. In Vercel dashboard, click **Add New Project** and import this repository.
+3. Vercel will use:
+  - Install Command: `npm install`
+  - Build Command: `npm run build:web`
+  - Output Directory: `dist`
+4. Deploy.
+
+### Option 2: Deploy with Vercel CLI
+
+```bash
+npm i -g vercel
+vercel
+vercel --prod
+```
+
+The production build is exported with Expo and served from `dist/`.
+Client-side routes are handled with a fallback rewrite to `index.html`.
+
 ## Implemented Features
 
 - Role-based app entry and navigation (student and teacher)
