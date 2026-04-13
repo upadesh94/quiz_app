@@ -67,6 +67,14 @@ npm run ios
 - `npm run preview:web` -> `npx serve dist`
 - `npm run typecheck` -> TypeScript type checking
 
+## Browser Compatibility
+
+- Target baseline: Chrome 81 (Android 10) and newer.
+- Web entry loads `core-js` and `regenerator-runtime` polyfills for legacy browser support.
+- Build target is controlled via `browserslist` in `package.json`.
+
+Note: older Chrome versions may not fully support CSS `gap` in flex layouts, so spacing can appear tighter on some screens while functionality remains available.
+
 ## Deploy To Vercel
 
 This project is configured for Vercel using `vercel.json`.
