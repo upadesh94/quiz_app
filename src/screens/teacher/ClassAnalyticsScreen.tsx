@@ -4,7 +4,9 @@ import { SubjectBarChart } from '../../components/charts/SubjectBarChart';
 import { CustomCard } from '../../components/common/CustomCard';
 import { PerformanceLineChart } from '../../components/charts/PerformanceLineChart';
 import { CustomInput } from '../../components/common/CustomInput';
+import { CustomButton } from '../../components/common/CustomButton';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { AttemptService } from '../../services/quiz/AttemptService';
 import { PerformanceService } from '../../services/analytics/PerformanceService';
 import { CategoryBarChart } from '../../components/charts/CategoryBarChart';
 import { TeacherPieChart } from '../../components/charts/TeacherPieChart';
@@ -44,6 +46,13 @@ export function ClassAnalyticsScreen() {
       setAnalytics(response);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAllowRetake = async (studentId: string, quizId: string) => {
+    if (window.confirm('Are you sure you want to allow this student to retake the quiz? This will delete their current attempt.')) {
+      await AttemptService.deleteAttempt(studentId, quizId);
+      loadAnalytics();
     }
   };
 
@@ -387,6 +396,49 @@ export function ClassAnalyticsScreen() {
               <Text style={{ color: colors.textSecondary }}>
                 Weak Subject: {student.weakestSubject ?? '-'} ({student.weakestSubjectScore ?? 0}%)
               </Text>
+            </CustomCard>
+          ))
+        )}
+
+        <Text
+          style={{
+            fontSize: fontSize.lg,
+            fontWeight: '700',
+            marginTop: spacing.lg,
+            marginBottom: spacing.md,
+            color: colors.textPrimary,
+          }}
+        >
+          Recent Attempts
+        </Text>
+        {(analytics?.rawAttempts ?? []).length === 0 ? (
+          <CustomCard>
+            <Text style={{ color: colors.textSecondary }}>No attempts found for current filters.</Text>
+          </CustomCard>
+        ) : (
+          (analytics?.rawAttempts ?? []).slice(0, 10).map((attempt) => (
+            <CustomCard key={`attempt-${attempt.id}`}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>
+                    {attempt.studentName || attempt.studentId}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, marginBottom: 2 }}>
+                    Quiz: {attempt.quizTitle || attempt.quizId}
+                  </Text>
+                  <Text style={{ color: attempt.percentage >= 40 ? colors.success : colors.error, fontWeight: '600' }}>
+                    Score: {attempt.percentage}%
+                  </Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
+                    Completed: {new Date(attempt.completedAt).toLocaleString()}
+                  </Text>
+                </View>
+                <CustomButton 
+                  title="Allow Retake" 
+                  variant="secondary" 
+                  onPress={() => handleAllowRetake(attempt.studentId, attempt.quizId)}
+                />
+              </View>
             </CustomCard>
           ))
         )}

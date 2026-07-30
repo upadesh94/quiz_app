@@ -41,6 +41,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
   const [shuffleQuestions, setShuffleQuestions] = useState(false);
   const [allowReview, setAllowReview] = useState(true);
   const [publishNow, setPublishNow] = useState(true);
+  const [limitToToday, setLimitToToday] = useState(false);
   const [error, setError] = useState('');
   const subjectPresets = ['Mathematics', 'Science', 'English', 'Social Science'];
 
@@ -121,6 +122,8 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         .filter(Boolean),
       status: shouldPublish ? 'published' : 'draft',
       isPublished: shouldPublish,
+      availableFrom: limitToToday ? new Date(new Date().setHours(0,0,0,0)).toISOString() : undefined,
+      availableUntil: limitToToday ? new Date(new Date().setHours(23,59,59,999)).toISOString() : undefined,
     };
   };
 
@@ -301,6 +304,16 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
             style={[styles.toggleButton, publishNow ? styles.toggleOn : styles.toggleOff]}
           >
             <Text style={styles.toggleLabel}>{publishNow ? 'ON' : 'OFF'}</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchText}>Limit to today only</Text>
+          <Pressable
+            onPress={() => setLimitToToday((prev) => !prev)}
+            style={[styles.toggleButton, limitToToday ? styles.toggleOn : styles.toggleOff]}
+          >
+            <Text style={styles.toggleLabel}>{limitToToday ? 'ON' : 'OFF'}</Text>
           </Pressable>
         </View>
       </View>

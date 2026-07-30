@@ -1,5 +1,5 @@
 import { Quiz } from '../../types/models';
-import { addDocument, getCollection, getDocument, where } from '../../firebase/firestore';
+import { addDocument, getCollection, getDocument, updateDocument, where } from '../../firebase/firestore';
 
 export class QuizService {
   static async getQuizById(quizId: string): Promise<Quiz | null> {
@@ -42,6 +42,8 @@ export class QuizService {
     status?: 'draft' | 'published';
     createdBy: string;
     isPublished?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
   }) {
     const id = await addDocument('quizzes', {
       title: payload.title,
@@ -60,6 +62,8 @@ export class QuizService {
       totalQuestions: 0,
       createdBy: payload.createdBy,
       isPublished: payload.isPublished ?? true,
+      availableFrom: payload.availableFrom || null,
+      availableUntil: payload.availableUntil || null,
       createdAt: new Date().toISOString(),
     });
 
@@ -68,5 +72,12 @@ export class QuizService {
 
   static async getTeacherQuizzes(teacherId: string): Promise<Quiz[]> {
     return getCollection<Quiz>('quizzes', [where('createdBy', '==', teacherId)]);
+  }
+
+  static async updateQuizStatus(quizId: string, isPublished: boolean) {
+    await updateDocument('quizzes', quizId, {
+      isPublished,
+      status: isPublished ? 'published' : 'draft',
+    });
   }
 }

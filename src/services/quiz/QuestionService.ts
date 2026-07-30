@@ -3,7 +3,7 @@ import { Question } from '../../types/models';
 
 export class QuestionService {
   static async getQuestionsByQuizId(quizId: string): Promise<Question[]> {
-    const data = await getCollection<Question>('questions', [where('quizId', '==', quizId)]);
+    const data = await getCollection<Question>(`quizzes/${quizId}/questions`, []);
 
     if (data.length > 0) {
       return data;
@@ -36,7 +36,7 @@ export class QuestionService {
     correctAnswer: string;
     marks?: number;
   }) {
-    const id = await addDocument('questions', {
+    const id = await addDocument(`quizzes/${payload.quizId}/questions`, {
       quizId: payload.quizId,
       question: payload.question,
       options: payload.options,

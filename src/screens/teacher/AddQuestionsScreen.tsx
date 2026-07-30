@@ -5,7 +5,8 @@ import { QuestionForm } from '../../components/forms/QuestionForm';
 import { CustomCard } from '../../components/common/CustomCard';
 import { RootStackParamList } from '../../navigation/types';
 import { QuestionService } from '../../services/quiz/QuestionService';
-import { Question } from '../../types/models';
+import { QuizService } from '../../services/quiz/QuizService';
+import { Question, Quiz } from '../../types/models';
 import { useResponsive } from '../../utils/responsive';
 import { colors, radii } from '../../utils/theme';
 
@@ -14,16 +15,25 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AddQuestions'>;
 export function AddQuestionsScreen({ route }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [message, setMessage] = useState('');
 
-  const loadQuestions = async () => {
+  const loadData = async () => {
+    const quizData = await QuizService.getQuizById(route.params.quizId);
+    setQuiz(quizData);
     const data = await QuestionService.getQuestionsByQuizId(route.params.quizId);
     setQuestions(data);
   };
 
   useEffect(() => {
-    loadQuestions();
+    loadData();
   }, [route.params.quizId]);
+
+  const handlePublish = async () => {
+    await QuizService.updateQuizStatus(route.params.quizId, true);
+    setQuiz((prev) => prev ? { ...prev, isPublished: true, status: 'published' } : null);
+    setMessage('Quiz has been published successfully!');
+  };
 
   const onAddQuestion = async (payload: {
     question: string;
@@ -40,7 +50,8 @@ export function AddQuestionsScreen({ route }: Props) {
       marks: payload.marks,
     });
     setMessage('Question added successfully.');
-    await loadQuestions();
+    const data = await QuestionService.getQuestionsByQuizId(route.params.quizId);
+    setQuestions(data);
   };
 
   return (
@@ -83,6 +94,33 @@ export function AddQuestionsScreen({ route }: Props) {
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: spacing.xs }}>
             Quiz ID: {route.params.quizId}
           </Text>
+          {quiz && (!quiz.isPublished || quiz.status === 'draft') && (
+            <View style={{ marginTop: spacing.md, backgroundColor: '#fff7ed', padding: spacing.sm, borderRadius: radii.sm, borderWidth: 1, borderColor: '#fdba74' }}>
+              <Text style={{ color: '#c2410c', fontSize: fontSize.sm, fontWeight: '600', marginBottom: spacing.xs }}>
+                This quiz is currently a Draft.
+              </Text>
+              <Text style={{ color: '#9a3412', fontSize: fontSize.xs, marginBottom: spacing.sm }}>
+                Students cannot see this quiz until it is published.
+              </Text>
+              <View style={{ alignSelf: 'flex-start' }}>
+                <Text
+                  onPress={handlePublish}
+                  style={{
+                    backgroundColor: '#ea580c',
+                    color: '#fff',
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                    borderRadius: radii.sm,
+                    fontWeight: '700',
+                    fontSize: fontSize.sm,
+                    overflow: 'hidden'
+                  }}
+                >
+                  Publish Quiz Now
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         <QuestionForm onSubmit={onAddQuestion} />

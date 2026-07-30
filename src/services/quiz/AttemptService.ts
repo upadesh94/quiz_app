@@ -1,4 +1,4 @@
-import { addDocument } from '../../firebase/firestore';
+import { addDocument, getCollection, deleteDocument, where } from '../../firebase/firestore';
 import { AttemptPayload } from '../../types/models';
 
 export class AttemptService {
@@ -21,5 +21,23 @@ export class AttemptService {
     });
 
     return { id, ...payload };
+  }
+
+  static async hasStudentAttemptedQuiz(studentId: string, quizId: string): Promise<boolean> {
+    const attempts = await getCollection('attempts', [
+      where('studentId', '==', studentId),
+      where('quizId', '==', quizId)
+    ]);
+    return attempts.length > 0;
+  }
+
+  static async deleteAttempt(studentId: string, quizId: string): Promise<void> {
+    const attempts = await getCollection<{ id: string }>('attempts', [
+      where('studentId', '==', studentId),
+      where('quizId', '==', quizId)
+    ]);
+    for (const attempt of attempts) {
+      await deleteDocument('attempts', attempt.id);
+    }
   }
 }

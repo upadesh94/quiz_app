@@ -36,6 +36,8 @@ export interface Quiz {
   status?: 'draft' | 'published';
   isPublished?: boolean;
   createdBy?: string;
+  availableFrom?: string;
+  availableUntil?: string;
 }
 
 export interface Question {
@@ -198,4 +200,13 @@ export interface TeacherAdvancedAnalytics extends TeacherClassAnalytics {
   weakStudents: StudentLeaderboardEntry[];
   subjectHeatmap: SubjectHeatmapPoint[];
   subjectDistribution: PieSlice[];
+  rawAttempts: Array<{
+    id: string;
+    studentId: string;
+    studentName?: string;
+    quizId: string;
+    quizTitle?: string;
+    percentage: number;
+    completedAt: string;
+  }>;
 }

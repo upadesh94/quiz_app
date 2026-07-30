@@ -35,6 +35,27 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
       ]);
 
       if (quiz) {
+        if (user?.id) {
+          const hasAttempted = await AttemptService.hasStudentAttemptedQuiz(user.id, quiz.id);
+          if (hasAttempted) {
+            Alert.alert('Access Denied', 'You have already attempted this quiz.');
+            navigation.goBack();
+            return;
+          }
+        }
+
+        const now = new Date().getTime();
+        if (quiz.availableFrom && now < new Date(quiz.availableFrom).getTime()) {
+          Alert.alert('Access Denied', 'This quiz is not yet available.');
+          navigation.goBack();
+          return;
+        }
+        if (quiz.availableUntil && now > new Date(quiz.availableUntil).getTime()) {
+          Alert.alert('Access Denied', 'This quiz has expired.');
+          navigation.goBack();
+          return;
+        }
+
         setQuizMeta({
           title: quiz.title,
           subject: quiz.subject,
@@ -144,11 +165,11 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
 
       await AttemptService.submitAttempt({
         studentId: user.id,
-        studentName: user.fullName ?? user.username,
+        studentName: user.fullName || user.username || '',
         quizId: route.params.quizId,
-        quizTitle: quizMeta?.title,
-        teacherId: quizMeta?.teacherId,
-        subject: quizMeta?.subject ?? 'General',
+        quizTitle: quizMeta?.title || '',
+        teacherId: quizMeta?.teacherId || '',
+        subject: quizMeta?.subject || 'General',
         classLevel: quizMeta?.classLevel ?? user.classLevel ?? 10,
         score,
         totalMarks,
@@ -165,26 +186,33 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
         totalMarks,
         percentage,
       });
-    } catch {
-      setError('Unable to submit quiz. Please try again.');
+    } catch (e: any) {
+      console.error('Quiz submission error:', e);
+      setError(e?.message || 'Unable to submit quiz. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const onConfirmSubmit = () => {
-    Alert.alert(
-      'Submit Quiz',
-      'Are you sure you want to submit your quiz? You cannot change answers after submission.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit',
-          style: 'default',
-          onPress: onSubmit,
-        },
-      ],
-    );
+    if (typeof window !== 'undefined' && window.confirm) {
+      if (window.confirm('Are you sure you want to submit your quiz? You cannot change answers after submission.')) {
+        onSubmit();
+      }
+    } else {
+      Alert.alert(
+        'Submit Quiz',
+        'Are you sure you want to submit your quiz? You cannot change answers after submission.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Submit',
+            style: 'default',
+            onPress: onSubmit,
+          },
+        ],
+      );
+    }
   };
 
   if (questions.length === 0) {
@@ -198,7 +226,7 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
   return (
     <ScrollView
       style={{ ...styles.container, paddingHorizontal: containerPadding }}
-      contentContainerStyle={{ gap: spacing.lg, paddingVertical: spacing.lg }}
+      contentContainerStyle={{ flexGrow: 1, paddingVertical: spacing.lg, paddingBottom: 100 }}
     >
       <View
         style={{
@@ -217,6 +245,7 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
             borderColor: colors.border,
             borderRadius: radii.lg,
             padding: spacing.md,
+            marginBottom: spacing.lg,
             ...shadows.card,
           }}
         >
@@ -264,159 +293,170 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        <View style={{ marginTop: spacing.md, marginBottom: spacing.lg }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-            <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600' }}>Progress</Text>
-            <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600' }}>
-              {currentQuestionIndex + 1} of {questions.length}
-            </Text>
-          </View>
-          <View style={{ height: 10, borderRadius: 999, backgroundColor: '#DBEAFE' }}>
-            <View
-              style={{
-                width: `${Math.max(progressPercent, 3)}%`,
-                height: '100%',
-                borderRadius: 999,
-                backgroundColor: colors.primary,
-              }}
+        <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: spacing.xl, alignItems: 'flex-start' }}>
+          {/* Main Question Area (Left Column on Desktop) */}
+          <View style={{ flex: isTablet ? 2 : undefined, width: '100%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600' }}>Question {currentQuestionIndex + 1} of {questions.length}</Text>
+              {!hasSelectedCurrentAnswer ? (
+                <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>Select or Skip</Text>
+              ) : null}
+            </View>
+            
+            <QuestionCard
+              question={`${currentQuestionIndex + 1}. ${currentQuestion.question}`}
+              options={currentQuestion.options}
+              selectedOption={answers[currentQuestion.id]}
+              onSelect={onSelectOption}
             />
-          </View>
-          {!hasSelectedCurrentAnswer ? (
-            <Text style={{ color: colors.textSecondary, marginTop: spacing.sm, fontSize: fontSize.sm }}>
-              Select an option or tap Skip to move ahead.
-            </Text>
-          ) : null}
-        </View>
 
-        <QuestionCard
-          question={`${currentQuestionIndex + 1}. ${currentQuestion.question}`}
-          options={currentQuestion.options}
-          selectedOption={answers[currentQuestion.id]}
-          onSelect={onSelectOption}
-        />
-
-        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
-          <View style={{ flex: 1, backgroundColor: '#FEE2E2', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.lg }}>Skipped</Text>
-            <Text style={{ color: colors.error, fontWeight: '800', fontSize: fontSize['2xl'] }}>{skippedQuestionIds.length}</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: '#EEF2FF', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.lg }}>Remaining</Text>
-            <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: fontSize['2xl'] }}>{remainingCount}</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: '#DCFCE7', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.lg }}>Attempted</Text>
-            <Text style={{ color: colors.success, fontWeight: '800', fontSize: fontSize['2xl'] }}>{attemptedCount}</Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.lg }}>
-          {questions.map((question, index) => {
-            const isCurrent = index === currentQuestionIndex;
-            const isAttempted = !!answers[question.id];
-            const isSkipped = skippedQuestionIds.includes(question.id);
-
-            let backgroundColor = '#E2E8F0';
-            let borderColor = 'transparent';
-            if (isAttempted) {
-              backgroundColor = '#DCFCE7';
-            }
-            if (isSkipped) {
-              backgroundColor = '#FEE2E2';
-            }
-            if (isCurrent) {
-              backgroundColor = '#DBEAFE';
-              borderColor = colors.primary;
-            }
-
-            return (
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
               <Pressable
-                key={question.id}
-                onPress={() => navigateQuestion(index)}
+                onPress={() => navigateQuestion(currentQuestionIndex - 1)}
+                disabled={isFirstQuestion}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 999,
+                  flex: 1,
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: radii.md,
+                  paddingVertical: spacing.md,
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor,
-                  borderWidth: 2,
-                  borderColor,
+                  opacity: isFirstQuestion ? 0.5 : 1,
                 }}
               >
-                <Text style={{ fontWeight: '700', color: colors.textPrimary, fontSize: fontSize.sm }}>{index + 1}</Text>
+                <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: fontSize.lg }}>PREVIOUS</Text>
               </Pressable>
-            );
-          })}
-        </View>
+              <Pressable
+                onPress={onSkipCurrent}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#EEF2FF',
+                  borderRadius: radii.md,
+                  paddingVertical: spacing.md,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.lg }}>SKIP</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => navigateQuestion(currentQuestionIndex + 1)}
+                disabled={isLastQuestion}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.primary,
+                  borderRadius: radii.md,
+                  paddingVertical: spacing.md,
+                  alignItems: 'center',
+                  opacity: isLastQuestion ? 0.5 : 1,
+                  ...shadows.soft,
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: fontSize.lg }}>NEXT</Text>
+              </Pressable>
+            </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <Pressable
-            onPress={() => navigateQuestion(currentQuestionIndex - 1)}
-            disabled={isFirstQuestion}
-            style={{
-              flex: 1,
-              backgroundColor: '#FFFFFF',
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: radii.md,
-              paddingVertical: spacing.md,
-              alignItems: 'center',
-              opacity: isFirstQuestion ? 0.5 : 1,
-            }}
-          >
-            <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: fontSize.lg }}>PREVIOUS</Text>
-          </Pressable>
-          <Pressable
-            onPress={onSkipCurrent}
-            style={{
-              flex: 1,
-              backgroundColor: '#EEF2FF',
-              borderRadius: radii.md,
-              paddingVertical: spacing.md,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.lg }}>SKIP</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => navigateQuestion(currentQuestionIndex + 1)}
-            disabled={isLastQuestion}
-            style={{
-              flex: 1,
-              backgroundColor: colors.primary,
-              borderRadius: radii.md,
-              paddingVertical: spacing.md,
-              alignItems: 'center',
-              opacity: isLastQuestion ? 0.5 : 1,
-              ...shadows.soft,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: fontSize.lg }}>NEXT</Text>
-          </Pressable>
-        </View>
+            {isLastQuestion ? (
+              <View style={{ marginTop: spacing.lg }}>
+                <CustomButton
+                  title={isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+                  onPress={onConfirmSubmit}
+                  loading={isSubmitting}
+                />
+              </View>
+            ) : null}
 
-        {isLastQuestion ? (
-          <View style={{ marginTop: spacing.lg }}>
-            <CustomButton
-              title={isSubmitting ? 'Submitting...' : 'Submit Quiz'}
-              onPress={onConfirmSubmit}
-              loading={isSubmitting}
-            />
+            {error ? (
+              <Text
+                style={{
+                  color: '#dc2626',
+                  fontSize: fontSize.sm,
+                  marginTop: spacing.md,
+                }}
+              >
+                {error}
+              </Text>
+            ) : null}
           </View>
-        ) : null}
 
-        {error ? (
-          <Text
-            style={{
-              color: '#dc2626',
-              fontSize: fontSize.sm,
-              marginTop: spacing.md,
-            }}
-          >
-            {error}
-          </Text>
-        ) : null}
+          {/* Stats and Navigation Grid (Right Column on Desktop) */}
+          <View style={{ flex: isTablet ? 1 : undefined, width: '100%' }}>
+            <View style={{ marginBottom: spacing.lg }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600' }}>Overall Progress</Text>
+                <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600' }}>
+                  {Math.round(progressPercent)}%
+                </Text>
+              </View>
+              <View style={{ height: 10, borderRadius: 999, backgroundColor: '#DBEAFE' }}>
+                <View
+                  style={{
+                    width: `${Math.max(progressPercent, 3)}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    backgroundColor: colors.primary,
+                  }}
+                />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+              <View style={{ flex: 1, backgroundColor: '#FEE2E2', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.sm }}>Skipped</Text>
+                <Text style={{ color: colors.error, fontWeight: '800', fontSize: fontSize.xl }}>{skippedQuestionIds.length}</Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: '#EEF2FF', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.sm }}>Remaining</Text>
+                <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: fontSize.xl }}>{remainingCount}</Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: '#DCFCE7', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.sm }}>Attempted</Text>
+                <Text style={{ color: colors.success, fontWeight: '800', fontSize: fontSize.xl }}>{attemptedCount}</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: fontSize.base, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.sm }}>Question Map</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+              {questions.map((question, index) => {
+                const isCurrent = index === currentQuestionIndex;
+                const isAttempted = !!answers[question.id];
+                const isSkipped = skippedQuestionIds.includes(question.id);
+
+                let backgroundColor = '#E2E8F0';
+                let borderColor = 'transparent';
+                if (isAttempted) {
+                  backgroundColor = '#DCFCE7';
+                }
+                if (isSkipped) {
+                  backgroundColor = '#FEE2E2';
+                }
+                if (isCurrent) {
+                  backgroundColor = '#DBEAFE';
+                  borderColor = colors.primary;
+                }
+
+                return (
+                  <Pressable
+                    key={question.id}
+                    onPress={() => navigateQuestion(index)}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 999,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor,
+                      borderWidth: 2,
+                      borderColor,
+                    }}
+                  >
+                    <Text style={{ fontWeight: '700', color: colors.textPrimary, fontSize: fontSize.sm }}>{index + 1}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -426,5 +466,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
+    userSelect: 'none',
+  } as any,
 });

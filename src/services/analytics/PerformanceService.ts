@@ -316,6 +316,17 @@ export class PerformanceService {
       weakStudents,
       subjectHeatmap: toSubjectHeatmap(subjectAnalytics),
       subjectDistribution: toSubjectDistribution(filtered),
+      rawAttempts: filtered
+        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+        .map(a => ({
+          id: a.id,
+          studentId: a.studentId,
+          studentName: a.studentName,
+          quizId: a.quizId,
+          quizTitle: a.quizTitle,
+          percentage: a.percentage,
+          completedAt: a.completedAt,
+        })),
     };
   }
 }

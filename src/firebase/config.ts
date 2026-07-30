@@ -5,13 +5,13 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBTOa2LT4sNu2mQVVnw_3-aGAYmDNWkSsQ',
-  authDomain: 'quizapp-77d6d.firebaseapp.com',
-  projectId: 'quizapp-77d6d',
-  storageBucket: 'quizapp-77d6d.firebasestorage.app',
-  messagingSenderId: '672345219554',
-  appId: '1:672345219554:web:9a431977b8030ee5f499bb',
-  measurementId: 'G-3X3HP2NCRY',
+  apiKey: "AIzaSyBTOa2LT4sNu2mQVVnw_3-aGAYmDNWkSsQ",
+  authDomain: "quizapp-77d6d.firebaseapp.com",
+  projectId: "quizapp-77d6d",
+  storageBucket: "quizapp-77d6d.firebasestorage.app",
+  messagingSenderId: "672345219554",
+  appId: "1:672345219554:web:f08b471c48609060f499bb",
+  measurementId: "G-RV04HMEJT5"
 };
 
 export const firebaseApp: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
