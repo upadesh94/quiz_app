@@ -4,20 +4,22 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoleSelection'>;
 
 export function RoleSelectionScreen({ navigation }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.background}>
-        <View style={styles.topGlow} />
-        <View style={styles.bottomGlow} />
+      <View style={[styles.background, { backgroundColor: isDark ? '#160629' : colors.background }]}>
+        {isDark && <View style={styles.topGlow} />}
+        {isDark && <View style={styles.bottomGlow} />}
 
         <View style={[styles.container, { paddingHorizontal: containerPadding }]}> 
           <View style={{ maxWidth: isTablet ? 520 : '100%', alignSelf: 'center', width: '100%' }}>
@@ -25,10 +27,13 @@ export function RoleSelectionScreen({ navigation }: Props) {
               <BrandLogo size={isTablet ? 190 : 160} />
             </View>
 
-            <View style={styles.heroCard}>
-              <Text style={[styles.heroTitle, { fontSize: fontSize['3xl'] }]}>QuizMaster</Text>
-              <Text style={[styles.heroSubtitle, { fontSize: fontSize.xl }]}>Learn faster. Quiz smarter.</Text>
-              <Text style={[styles.heroText, { fontSize: fontSize.base }]}>Pick your role to continue into a focused quiz experience built for students and teachers.</Text>
+            <View style={[
+              styles.heroCard,
+              !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }
+            ]}>
+              <Text style={[styles.heroTitle, { fontSize: fontSize['3xl'] }, !isDark && { color: colors.textPrimary }]}>QuizMaster</Text>
+              <Text style={[styles.heroSubtitle, { fontSize: fontSize.xl }, !isDark && { color: colors.primary }]}>Learn faster. Quiz smarter.</Text>
+              <Text style={[styles.heroText, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>Pick your role to continue into a focused quiz experience built for students and teachers.</Text>
 
               <View style={styles.pillRow}>
                 <View style={styles.pill}>
@@ -43,30 +48,38 @@ export function RoleSelectionScreen({ navigation }: Props) {
               </View>
             </View>
 
-            <Text style={[styles.welcomeTitle, { fontSize: fontSize['2xl'] }]}>Welcome!</Text>
-            <Text style={[styles.welcomeText, { fontSize: fontSize.base }]}>Choose how you want to continue</Text>
+            <Text style={[styles.welcomeTitle, { fontSize: fontSize['2xl'] }, !isDark && { color: colors.textPrimary }]}>Welcome!</Text>
+            <Text style={[styles.welcomeText, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>Choose how you want to continue</Text>
 
             <View style={styles.roleStack}>
               <Pressable
                 onPress={() => navigation.navigate('Login', { role: 'student' })}
-                style={({ pressed }) => [styles.roleButton, pressed ? styles.roleButtonPressed : null]}
+                style={({ pressed }) => [
+                  styles.roleButton,
+                  !isDark && { backgroundColor: colors.card, borderColor: colors.border },
+                  pressed ? styles.roleButtonPressed : null
+                ]}
               >
                 <Text style={styles.roleEmoji}>🎓</Text>
                 <View style={styles.roleContent}>
-                  <Text style={styles.roleTitle}>Student</Text>
-                  <Text style={styles.roleDesc}>Take quizzes and view your results</Text>
+                  <Text style={[styles.roleTitle, !isDark && { color: colors.textPrimary }]}>Student</Text>
+                  <Text style={[styles.roleDesc, !isDark && { color: colors.textSecondary }]}>Take quizzes and view your results</Text>
                 </View>
                 <Text style={styles.roleArrow}>→</Text>
               </Pressable>
 
               <Pressable
                 onPress={() => navigation.navigate('Login', { role: 'teacher' })}
-                style={({ pressed }) => [styles.roleButton, pressed ? styles.roleButtonPressed : null]}
+                style={({ pressed }) => [
+                  styles.roleButton,
+                  !isDark && { backgroundColor: colors.card, borderColor: colors.border },
+                  pressed ? styles.roleButtonPressed : null
+                ]}
               >
                 <Text style={styles.roleEmoji}>👩‍🏫</Text>
                 <View style={styles.roleContent}>
-                  <Text style={styles.roleTitle}>Teacher</Text>
-                  <Text style={styles.roleDesc}>Create quizzes and track class performance</Text>
+                  <Text style={[styles.roleTitle, !isDark && { color: colors.textPrimary }]}>Teacher</Text>
+                  <Text style={[styles.roleDesc, !isDark && { color: colors.textSecondary }]}>Create quizzes and track class performance</Text>
                 </View>
                 <Text style={styles.roleArrow}>→</Text>
               </Pressable>
@@ -81,7 +94,6 @@ export function RoleSelectionScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#160629',
   },
   scrollContent: {
     flexGrow: 1,
@@ -89,7 +101,6 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     minHeight: '100%',
-    backgroundColor: '#160629',
   },
   topGlow: {
     position: 'absolute',

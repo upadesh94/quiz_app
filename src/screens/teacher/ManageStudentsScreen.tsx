@@ -10,11 +10,12 @@ import { useResponsive, getGridColumns } from '../../utils/responsive';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { StudentRegistrationRequest } from '../../types/models';
 import { PerformanceService } from '../../services/analytics/PerformanceService';
-import { colors, radii } from '../../utils/theme';
+import { useAppTheme, radii } from '../../utils/theme';
 
 export function ManageStudentsScreen() {
   const user = useAppSelector((state) => state.auth.user);
   const { fontSize, spacing, containerPadding, isTablet, screenWidth } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const numColumns = getGridColumns(screenWidth, isTablet);
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
@@ -261,7 +262,7 @@ export function ManageStudentsScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }]}>
       <View
         style={{
           maxWidth: isTablet ? 800 : '100%',
@@ -275,14 +276,14 @@ export function ManageStudentsScreen() {
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.lg,
-            color: colors.textPrimary,
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           👥 Manage Students
         </Text>
 
         <CustomCard>
-          <Text style={{ fontSize: fontSize.lg, fontWeight: '700', marginBottom: spacing.md, color: colors.textPrimary }}>
+          <Text style={{ fontSize: fontSize.lg, fontWeight: '700', marginBottom: spacing.md, color: isDark ? '#FFFFFF' : colors.textPrimary }}>
             Search and Filter Students
           </Text>
 
@@ -300,61 +301,79 @@ export function ManageStudentsScreen() {
             </View>
           </View>
 
-          <Text style={{ color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.xs }}>Class Filter</Text>
+          <Text style={{ color: isDark ? '#a78bfa' : colors.textPrimary, fontWeight: '700', marginBottom: spacing.xs }}>Class Filter</Text>
           <View style={styles.filterRow}>
             {['all', '8', '9', '10'].map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setClassFilter(item as 'all' | '8' | '9' | '10')}
-                style={[styles.filterChip, classFilter === item ? styles.filterChipActive : styles.filterChipInactive]}
+                style={[
+                  styles.filterChip,
+                  classFilter === item
+                    ? (isDark ? styles.filterChipActiveDark : styles.filterChipActiveLight)
+                    : (isDark ? styles.filterChipInactiveDark : styles.filterChipInactiveLight)
+                ]}
               >
-                <Text style={classFilter === item ? styles.filterChipTextActive : styles.filterChipTextInactive}>
+                <Text style={
+                  classFilter === item
+                    ? (isDark ? styles.filterChipTextActiveDark : styles.filterChipTextActiveLight)
+                    : (isDark ? styles.filterChipTextInactiveDark : styles.filterChipTextInactiveLight)
+                }>
                   {item === 'all' ? 'All' : `Class ${item}`}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={{ color: colors.textPrimary, fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs }}>Status Filter</Text>
+          <Text style={{ color: isDark ? '#a78bfa' : colors.textPrimary, fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs }}>Status Filter</Text>
           <View style={styles.filterRow}>
             {['all', 'active', 'inactive'].map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setStatusFilter(item as 'all' | 'active' | 'inactive')}
-                style={[styles.filterChip, statusFilter === item ? styles.filterChipActive : styles.filterChipInactive]}
+                style={[
+                  styles.filterChip,
+                  statusFilter === item
+                    ? (isDark ? styles.filterChipActiveDark : styles.filterChipActiveLight)
+                    : (isDark ? styles.filterChipInactiveDark : styles.filterChipInactiveLight)
+                ]}
               >
-                <Text style={statusFilter === item ? styles.filterChipTextActive : styles.filterChipTextInactive}>
+                <Text style={
+                  statusFilter === item
+                    ? (isDark ? styles.filterChipTextActiveDark : styles.filterChipTextActiveLight)
+                    : (isDark ? styles.filterChipTextInactiveDark : styles.filterChipTextInactiveLight)
+                }>
                   {item.charAt(0).toUpperCase() + item.slice(1)}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.sm }}>
+          <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.sm }}>
             Showing {filteredStudents.length} of {students.length} students
           </Text>
         </CustomCard>
 
         {(selectedStudentForAnalysis || isAnalysisLoading) ? (
           <CustomCard>
-            <Text style={{ fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.md }}>
+            <Text style={{ fontSize: fontSize.lg, fontWeight: '700', color: isDark ? '#FFFFFF' : colors.textPrimary, marginBottom: spacing.md }}>
               Student Analysis Snapshot
             </Text>
 
             {isAnalysisLoading ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={{ color: colors.textSecondary }}>Loading analysis...</Text>
+                <ActivityIndicator size="small" color={isDark ? '#a855f7' : colors.primary} />
+                <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary }}>Loading analysis...</Text>
               </View>
             ) : (
               <>
-                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontWeight: '700' }}>
                   {selectedStudentForAnalysis?.fullName} ({selectedStudentForAnalysis?.username})
                 </Text>
-                <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
+                <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, marginTop: spacing.xs }}>
                   Avg Score: {selectedStudentAnalytics?.averageScore ?? 0}% | Attempts: {selectedStudentAnalytics?.attemptsCount ?? 0}
                 </Text>
-                <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
+                <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, marginTop: spacing.xs }}>
                   Strongest: {selectedStudentAnalytics?.strongestSubject ?? '-'} | Weakest: {selectedStudentAnalytics?.weakestSubject ?? '-'}
                 </Text>
                 <Text
@@ -378,19 +397,20 @@ export function ManageStudentsScreen() {
               fontSize: fontSize.lg,
               fontWeight: '700',
               marginBottom: spacing.md,
+              color: isDark ? '#FFFFFF' : colors.textPrimary,
             }}
           >
             ✅ Pending Student Requests ({pendingRequests.length})
           </Text>
           {pendingRequests.length === 0 ? (
-            <Text style={{ color: '#475569', fontSize: fontSize.sm }}>No pending requests.</Text>
+            <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: fontSize.sm }}>No pending requests.</Text>
           ) : (
             pendingRequests.map((request) => (
-              <View key={request.id} style={styles.requestItem}>
-                <Text style={{ fontWeight: '700', color: '#0f172a' }}>{request.fullName}</Text>
-                <Text style={{ color: '#334155', fontSize: fontSize.sm }}>Username: {request.username}</Text>
-                <Text style={{ color: '#334155', fontSize: fontSize.sm }}>Class: {request.classLevel}</Text>
-                <Text style={{ color: '#334155', fontSize: fontSize.sm }}>Mobile: {request.mobileNumber}</Text>
+              <View key={request.id} style={[styles.requestItem, isDark && { backgroundColor: 'rgba(15, 10, 44, 0.5)', borderColor: 'rgba(168, 85, 247, 0.3)' }]}>
+                <Text style={{ fontWeight: '700', color: isDark ? '#FFFFFF' : '#0f172a' }}>{request.fullName}</Text>
+                <Text style={{ color: isDark ? '#cbd5e1' : '#334155', fontSize: fontSize.sm }}>Username: {request.username}</Text>
+                <Text style={{ color: isDark ? '#cbd5e1' : '#334155', fontSize: fontSize.sm }}>Class: {request.classLevel}</Text>
+                <Text style={{ color: isDark ? '#cbd5e1' : '#334155', fontSize: fontSize.sm }}>Mobile: {request.mobileNumber}</Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
                   <Pressable
                     onPress={() => onApproveRequest(request.id)}
@@ -436,8 +456,42 @@ export function ManageStudentsScreen() {
           <CustomInput label="Roll Number" value={rollNumber} onChangeText={setRollNumber} placeholder="Optional roll no" />
           <CustomInput label="Section" value={section} onChangeText={setSection} placeholder="Optional section" />
           <CustomInput label="Admission Number" value={admissionNumber} onChangeText={setAdmissionNumber} placeholder="Optional admission no" />
-          <CustomInput label="Date of Birth" value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="YYYY-MM-DD" />
-          <CustomInput label="Gender" value={gender} onChangeText={setGender} placeholder="male/female/other" />
+          <CustomInput label="Date of Birth" value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="YYYY-MM-DD" type="date" />
+          
+          <Text style={{ color: isDark ? '#d8b4fe' : '#0f172a', fontSize: fontSize.sm, fontWeight: '600', marginBottom: spacing.xs }}>
+            Gender
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+            {['male', 'female', 'other'].map((item) => (
+              <Pressable
+                key={item}
+                onPress={() => setGender(item)}
+                style={{
+                  flex: 1,
+                  paddingVertical: spacing.sm,
+                  alignItems: 'center',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  backgroundColor: gender === item 
+                    ? (isDark ? 'rgba(168, 85, 247, 0.25)' : '#dbeafe')
+                    : (isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff'),
+                  borderColor: gender === item
+                    ? (isDark ? '#a855f7' : '#3b82f6')
+                    : (isDark ? 'rgba(168, 85, 247, 0.4)' : '#93c5fd'),
+                }}
+              >
+                <Text style={{
+                  fontWeight: gender === item ? '700' : '500',
+                  color: gender === item
+                    ? (isDark ? '#f3e8ff' : '#1d4ed8')
+                    : (isDark ? '#cbd5e1' : '#475569')
+                }}>
+                  {item.charAt(0).toUpperCase() + item.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          
           <CustomInput label="Address" value={address} onChangeText={setAddress} placeholder="Optional address" />
           <CustomInput label="Class" value={classLevel} onChangeText={setClassLevel} placeholder="8 / 9 / 10" />
           <CustomButton title={editingStudentId ? 'Update Student' : 'Add Student'} onPress={onSaveStudent} />
@@ -497,26 +551,27 @@ export function ManageStudentsScreen() {
                     fontSize: fontSize.base,
                     fontWeight: '700',
                     marginBottom: spacing.sm,
+                    color: isDark ? '#FFFFFF' : colors.textPrimary
                   }}
                 >
                   {student.fullName}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
                   User: {student.username}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
                   Mobile: {student.mobileNumber || '-'}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
                   Class: {student.classLevel}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
                   Roll No: {student.rollNumber || '-'}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
                   Parent: {student.parentName || '-'}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#334155' }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155' }}>
                   {student.isActive ? '✓ Active' : '✗ Inactive'}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
@@ -545,7 +600,7 @@ export function ManageStudentsScreen() {
         </View>
 
         <CustomCard>
-          <Text style={{ fontSize: fontSize.sm, color: '#334155', lineHeight: fontSize.sm * 1.5 }}>
+          <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', lineHeight: fontSize.sm * 1.5 }}>
             📝 Note: Password is stored as initial profile data for onboarding. Production apps should create auth credentials using Firebase Admin/Cloud Functions and never store plain text passwords.
           </Text>
         </CustomCard>
@@ -557,7 +612,6 @@ export function ManageStudentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   filterRow: {
     flexDirection: 'row',
@@ -570,21 +624,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: '#1D4ED8',
+  filterChipActiveLight: {
+    backgroundColor: '#1d4ed8',
+    borderColor: '#1d4ed8',
   },
-  filterChipInactive: {
-    backgroundColor: colors.card,
-    borderColor: '#CBD5E1',
+  filterChipInactiveLight: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#cbd5e1',
   },
-  filterChipTextActive: {
-    color: '#FFFFFF',
+  filterChipTextActiveLight: {
+    color: '#ffffff',
     fontWeight: '700',
     fontSize: 12,
   },
-  filterChipTextInactive: {
-    color: colors.textSecondary,
+  filterChipTextInactiveLight: {
+    color: '#334155',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  filterChipActiveDark: {
+    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+    borderColor: '#a855f7',
+  },
+  filterChipInactiveDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.5)',
+    borderColor: 'rgba(168, 85, 247, 0.3)',
+  },
+  filterChipTextActiveDark: {
+    color: '#f3e8ff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  filterChipTextInactiveDark: {
+    color: '#c4b5fd',
     fontWeight: '600',
     fontSize: 12,
   },
@@ -598,7 +670,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1d4ed8',
   },
   analyzeButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: '#8b5cf6',
   },
   deleteButton: {
     backgroundColor: '#dc2626',

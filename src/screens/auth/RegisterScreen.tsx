@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CustomButton } from '../../components/common/CustomButton';
 import { CustomInput } from '../../components/common/CustomInput';
@@ -7,11 +7,13 @@ import { RootStackParamList } from '../../navigation/types';
 import { AuthService } from '../../services/auth/AuthService';
 import { ErrorHandler } from '../../services/utils/ErrorHandler';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 export function RegisterScreen({ navigation, route }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +70,7 @@ export function RegisterScreen({ navigation, route }: Props) {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#eef7ff' }}>
+    <ScrollView style={{ flex: 1, backgroundColor: isDark ? '#160629' : '#eef7ff' }}>
       <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
         <View
           style={{
@@ -82,7 +84,7 @@ export function RegisterScreen({ navigation, route }: Props) {
               fontSize: fontSize['3xl'],
               fontWeight: '700',
               marginBottom: spacing.md,
-              color: '#0f172a',
+              color: isDark ? '#FFFFFF' : '#0f172a',
             }}
           >
             📝 Register ({route.params.role})
@@ -91,7 +93,7 @@ export function RegisterScreen({ navigation, route }: Props) {
             style={{
               fontSize: fontSize.base,
               marginBottom: spacing.lg,
-              color: '#334155',
+              color: isDark ? '#cbd5e1' : '#334155',
               lineHeight: fontSize.base * 1.5,
             }}
           >
@@ -166,13 +168,42 @@ export function RegisterScreen({ navigation, route }: Props) {
                 value={dateOfBirth}
                 onChangeText={setDateOfBirth}
                 placeholder="YYYY-MM-DD"
+                type="date"
               />
-              <CustomInput
-                label="Gender"
-                value={gender}
-                onChangeText={setGender}
-                placeholder="male/female/other"
-              />
+              
+              <Text style={{ color: isDark ? '#d8b4fe' : '#0f172a', fontSize: fontSize.sm, fontWeight: '600', marginBottom: spacing.xs }}>
+                Gender
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+                {['male', 'female', 'other'].map((item) => (
+                  <Pressable
+                    key={item}
+                    onPress={() => setGender(item)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: spacing.sm,
+                      alignItems: 'center',
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      backgroundColor: gender === item 
+                        ? (isDark ? 'rgba(168, 85, 247, 0.25)' : '#dbeafe')
+                        : (isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff'),
+                      borderColor: gender === item
+                        ? (isDark ? '#a855f7' : '#3b82f6')
+                        : (isDark ? 'rgba(168, 85, 247, 0.4)' : '#93c5fd'),
+                    }}
+                  >
+                    <Text style={{
+                      fontWeight: gender === item ? '700' : '500',
+                      color: gender === item
+                        ? (isDark ? '#f3e8ff' : '#1d4ed8')
+                        : (isDark ? '#cbd5e1' : '#475569')
+                    }}>
+                      {item.charAt(0).toUpperCase() + item.slice(1)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </>
           ) : null}
 
@@ -192,7 +223,7 @@ export function RegisterScreen({ navigation, route }: Props) {
           {error ? (
             <Text
               style={{
-                color: '#dc2626',
+                color: isDark ? '#fca5a5' : '#dc2626',
                 marginBottom: spacing.md,
                 fontSize: fontSize.sm,
               }}
@@ -204,7 +235,7 @@ export function RegisterScreen({ navigation, route }: Props) {
           {message ? (
             <Text
               style={{
-                color: '#166534',
+                color: isDark ? '#86efac' : '#166534',
                 marginBottom: spacing.md,
                 fontSize: fontSize.sm,
               }}

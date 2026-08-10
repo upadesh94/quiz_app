@@ -8,12 +8,13 @@ import { QuestionService } from '../../services/quiz/QuestionService';
 import { QuizService } from '../../services/quiz/QuizService';
 import { Question, Quiz } from '../../types/models';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii } from '../../utils/theme';
+import { useAppTheme, radii } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddQuestions'>;
 
 export function AddQuestionsScreen({ route }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [message, setMessage] = useState('');
@@ -55,7 +56,7 @@ export function AddQuestionsScreen({ route }: Props) {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }]}>
       <View
         style={{
           maxWidth: isTablet ? 700 : '100%',
@@ -69,7 +70,7 @@ export function AddQuestionsScreen({ route }: Props) {
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.md,
-            color: colors.textPrimary,
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           ➕ Add Questions
@@ -77,21 +78,21 @@ export function AddQuestionsScreen({ route }: Props) {
 
         <View
           style={{
-            backgroundColor: '#EFF6FF',
+            backgroundColor: isDark ? 'rgba(124, 58, 237, 0.1)' : '#EFF6FF',
             borderRadius: radii.md,
             borderWidth: 1,
-            borderColor: '#BFDBFE',
+            borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : '#BFDBFE',
             padding: spacing.md,
             marginBottom: spacing.lg,
           }}
         >
-          <Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: '700', marginBottom: spacing.xs }}>
+          <Text style={{ color: isDark ? '#a78bfa' : colors.primary, fontSize: fontSize.sm, fontWeight: '700', marginBottom: spacing.xs }}>
             Step 2 of 2: Build Question Bank
           </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm, lineHeight: fontSize.sm * 1.5 }}>
+          <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, fontSize: fontSize.sm, lineHeight: fontSize.sm * 1.5 }}>
             Tip: You can copy questions from another source and paste them in Quick Paste format. Then parse and add instantly.
           </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: spacing.xs }}>
+          <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, fontSize: fontSize.xs, marginTop: spacing.xs }}>
             Quiz ID: {route.params.quizId}
           </Text>
           {quiz && (!quiz.isPublished || quiz.status === 'draft') && (
@@ -144,7 +145,7 @@ export function AddQuestionsScreen({ route }: Props) {
             fontWeight: '700',
             marginTop: spacing.xl,
             marginBottom: spacing.lg,
-            color: colors.textPrimary,
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           Current Questions ({questions.length})
@@ -156,18 +157,18 @@ export function AddQuestionsScreen({ route }: Props) {
                 fontWeight: '700',
                 marginBottom: spacing.sm,
                 fontSize: fontSize.base,
-                color: colors.textPrimary,
+                color: isDark ? '#FFFFFF' : colors.textPrimary,
               }}
             >
               {index + 1}. {question.question}
             </Text>
-            <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+            <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
               ✓ Correct: {question.correctAnswer}
             </Text>
-            <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+            <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
               Options: {question.options.join(' | ')}
             </Text>
-            <Text style={{ fontSize: fontSize.sm, color: '#334155' }}>
+            <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155' }}>
               🎯 Marks: {question.marks ?? 1}
             </Text>
           </CustomCard>
@@ -180,6 +181,5 @@ export function AddQuestionsScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
 });

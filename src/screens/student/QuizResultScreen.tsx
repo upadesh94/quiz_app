@@ -4,16 +4,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CustomButton } from '../../components/common/CustomButton';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizResult'>;
 
 export function QuizResultScreen({ navigation, route }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
 
   const passed = route.params.percentage >= 40;
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb', paddingHorizontal: containerPadding }]}>
       <View
         style={{
           flex: 1,
@@ -31,7 +33,7 @@ export function QuizResultScreen({ navigation, route }: Props) {
             fontSize: fontSize['3xl'],
             fontWeight: '800',
             marginBottom: spacing.lg,
-            color: passed ? '#16a34a' : '#dc2626',
+            color: passed ? (isDark ? '#86efac' : '#16a34a') : (isDark ? '#fca5a5' : '#dc2626'),
           }}
         >
           {passed ? '🎉 Excellent!' : '📚 Keep Practicing'}
@@ -42,7 +44,7 @@ export function QuizResultScreen({ navigation, route }: Props) {
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.md,
-            color: '#0f172a',
+            color: isDark ? '#FFFFFF' : '#0f172a',
           }}
         >
           Quiz Result
@@ -52,7 +54,9 @@ export function QuizResultScreen({ navigation, route }: Props) {
           style={{
             paddingVertical: spacing.lg,
             paddingHorizontal: spacing.lg,
-            backgroundColor: '#f0f9ff',
+            backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#f0f9ff',
+            borderWidth: isDark ? 1 : 0,
+            borderColor: 'rgba(168, 85, 247, 0.5)',
             borderRadius: 16,
             marginBottom: spacing.xl,
             width: '100%',
@@ -63,7 +67,7 @@ export function QuizResultScreen({ navigation, route }: Props) {
             style={{
               fontSize: fontSize['2xl'],
               fontWeight: '700',
-              color: passed ? '#16a34a' : '#dc2626',
+              color: passed ? (isDark ? '#86efac' : '#16a34a') : (isDark ? '#fca5a5' : '#dc2626'),
               marginBottom: spacing.md,
             }}
           >
@@ -73,7 +77,7 @@ export function QuizResultScreen({ navigation, route }: Props) {
             style={{
               fontSize: fontSize.xl,
               fontWeight: '600',
-              color: '#0f172a',
+              color: isDark ? '#FFFFFF' : '#0f172a',
               marginBottom: spacing.sm,
             }}
           >
@@ -82,7 +86,7 @@ export function QuizResultScreen({ navigation, route }: Props) {
           <Text
             style={{
               fontSize: fontSize.base,
-              color: '#334155',
+              color: isDark ? '#cbd5e1' : '#334155',
             }}
           >
             {passed ? '✓ You passed!' : '✗ You need 40% to pass'}
@@ -101,6 +105,5 @@ export function QuizResultScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
 });

@@ -4,20 +4,22 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Landing'>;
 
 export function LandingScreen({ navigation }: Props) {
   const { fontSize, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
 
   return (
     <ScrollView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: isDark ? '#160629' : colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.background}>
-        <View style={styles.topGlow} />
-        <View style={styles.bottomGlow} />
+      <View style={[styles.background, { backgroundColor: isDark ? '#160629' : colors.background }]}>
+        {isDark && <View style={styles.topGlow} />}
+        {isDark && <View style={styles.bottomGlow} />}
 
         <View style={[styles.container, { paddingHorizontal: containerPadding }]}> 
           <View style={{ maxWidth: isTablet ? 520 : '100%', alignSelf: 'center', width: '100%' }}>
@@ -25,10 +27,17 @@ export function LandingScreen({ navigation }: Props) {
               <BrandLogo size={isTablet ? 220 : 180} />
             </View>
 
-            <View style={styles.heroCard}>
-              <Text style={[styles.heroTitle, { fontSize: fontSize['3xl'] }]}>EduQuiz</Text>
-              <Text style={[styles.heroSubtitle, { fontSize: fontSize.xl }]}>Elevate Your Learning Experience</Text>
-              <Text style={[styles.heroText, { fontSize: fontSize.base }]}>
+            <View style={[
+              styles.heroCard,
+              !isDark && {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.primary,
+              }
+            ]}>
+              <Text style={[styles.heroTitle, { fontSize: fontSize['3xl'] }, !isDark && { color: colors.textPrimary }]}>EduQuiz</Text>
+              <Text style={[styles.heroSubtitle, { fontSize: fontSize.xl }, !isDark && { color: colors.primary }]}>Elevate Your Learning Experience</Text>
+              <Text style={[styles.heroText, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>
                 Join thousands of students and teachers in an interactive, seamless, and smart quiz platform.
               </Text>
 
@@ -53,7 +62,6 @@ export function LandingScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#160629',
   },
   scrollContent: {
     flexGrow: 1,
@@ -61,7 +69,6 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     minHeight: '100%',
-    backgroundColor: '#160629',
   },
   topGlow: {
     position: 'absolute',

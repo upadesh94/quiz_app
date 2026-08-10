@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 import { useResponsive } from '../../utils/responsive';
 
 type QuestionFormProps = {
@@ -11,6 +11,7 @@ type QuestionFormProps = {
 
 export function QuestionForm({ onSubmit }: QuestionFormProps) {
   const { spacing, fontSize } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const [question, setQuestion] = useState('');
   const [optionA, setOptionA] = useState('');
   const [optionB, setOptionB] = useState('');
@@ -162,30 +163,35 @@ export function QuestionForm({ onSubmit }: QuestionFormProps) {
 
   return (
     <View>
-      <View style={[styles.sectionCard, { marginBottom: spacing.md }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.base }]}>Quick Paste (Copy from anywhere)</Text>
-        <Text style={[styles.helperText, { fontSize: fontSize.sm }]}>Example format: question on first line, options as A) B) C) D), then Answer: B</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#e2e8f0', marginBottom: spacing.md }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.base, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Quick Paste (Copy from anywhere)</Text>
+        <Text style={[styles.helperText, { fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#64748b' }]}>Example format: question on first line, options as A) B) C) D), then Answer: B</Text>
         <TextInput
           value={pasteInput}
           onChangeText={setPasteInput}
           multiline
           numberOfLines={6}
           placeholder={"What is 2 + 2?\nA) 3\nB) 4\nC) 5\nD) 6\nAnswer: B\nMarks: 2"}
-          textAlignVertical="top"
-          style={[styles.pasteInput, { marginTop: spacing.sm }]}
+          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+          style={[styles.pasteInput, {
+            marginTop: spacing.sm,
+            backgroundColor: isDark ? 'rgba(15, 10, 44, 0.5)' : '#ffffff',
+            borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#BFDBFE',
+            color: isDark ? '#FFFFFF' : '#0f172a'
+          }]}
         />
         <CustomButton title="Parse Pasted Content" variant="secondary" onPress={parsePastedQuestion} />
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.base }]}>Question Details</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#e2e8f0' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.base, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Question Details</Text>
         <CustomInput value={question} onChangeText={setQuestion} placeholder="Enter question" label="Question" />
         <CustomInput value={optionA} onChangeText={setOptionA} placeholder="Option A" label="Option A" />
         <CustomInput value={optionB} onChangeText={setOptionB} placeholder="Option B" label="Option B" />
         <CustomInput value={optionC} onChangeText={setOptionC} placeholder="Option C" label="Option C" />
         <CustomInput value={optionD} onChangeText={setOptionD} placeholder="Option D" label="Option D" />
 
-        <Text style={styles.correctAnswerLabel}>Select Correct Answer</Text>
+        <Text style={[styles.correctAnswerLabel, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>Select Correct Answer</Text>
         <View style={styles.answerRow}>
           {optionValues.map((option, index) => {
             const value = option.trim();
@@ -198,9 +204,18 @@ export function QuestionForm({ onSubmit }: QuestionFormProps) {
                     setCorrectAnswer(value);
                   }
                 }}
-                style={[styles.answerChip, selected ? styles.answerChipSelected : styles.answerChipDefault]}
+                style={[
+                  styles.answerChip,
+                  selected
+                    ? (isDark ? styles.answerChipSelectedDark : styles.answerChipSelectedLight)
+                    : (isDark ? styles.answerChipDefaultDark : styles.answerChipDefaultLight)
+                ]}
               >
-                <Text style={selected ? styles.answerChipTextSelected : styles.answerChipTextDefault}>
+                <Text style={
+                  selected
+                    ? (isDark ? styles.answerChipTextSelectedDark : styles.answerChipTextSelectedLight)
+                    : (isDark ? styles.answerChipTextDefaultDark : styles.answerChipTextDefaultLight)
+                }>
                   {optionLabels[index]}
                 </Text>
               </Pressable>
@@ -212,7 +227,7 @@ export function QuestionForm({ onSubmit }: QuestionFormProps) {
         <CustomInput value={marks} onChangeText={setMarks} placeholder="1" label="Marks (1-20)" />
       </View>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={[styles.errorText, { color: isDark ? '#f87171' : '#ef4444' }]}>{error}</Text> : null}
 
       <CustomButton title="Add Question" onPress={handleSubmit} />
     </View>
@@ -221,34 +236,27 @@ export function QuestionForm({ onSubmit }: QuestionFormProps) {
 
 const styles = StyleSheet.create({
   sectionCard: {
-    backgroundColor: colors.card,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
     padding: 14,
     ...shadows.soft,
   },
   sectionTitle: {
-    color: colors.textPrimary,
     fontWeight: '700',
     marginBottom: 8,
   },
   helperText: {
-    color: colors.textSecondary,
     lineHeight: 18,
   },
   pasteInput: {
     minHeight: 120,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
     borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
-    color: colors.textPrimary,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    textAlignVertical: 'top',
   },
   correctAnswerLabel: {
-    color: colors.textPrimary,
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -264,24 +272,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
-  answerChipDefault: {
+  answerChipDefaultLight: {
     backgroundColor: '#F8FAFC',
     borderColor: '#CBD5E1',
   },
-  answerChipSelected: {
+  answerChipSelectedLight: {
     backgroundColor: '#DBEAFE',
-    borderColor: colors.primary,
+    borderColor: '#3b82f6',
   },
-  answerChipTextDefault: {
-    color: colors.textSecondary,
+  answerChipTextDefaultLight: {
+    color: '#64748b',
     fontWeight: '700',
   },
-  answerChipTextSelected: {
-    color: colors.primary,
+  answerChipTextSelectedLight: {
+    color: '#3b82f6',
+    fontWeight: '800',
+  },
+  answerChipDefaultDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.5)',
+    borderColor: 'rgba(168, 85, 247, 0.3)',
+  },
+  answerChipSelectedDark: {
+    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+    borderColor: '#a855f7',
+  },
+  answerChipTextDefaultDark: {
+    color: '#c4b5fd',
+    fontWeight: '700',
+  },
+  answerChipTextSelectedDark: {
+    color: '#f3e8ff',
     fontWeight: '800',
   },
   errorText: {
-    color: colors.error,
     fontWeight: '600',
     marginTop: 10,
     marginBottom: 10,

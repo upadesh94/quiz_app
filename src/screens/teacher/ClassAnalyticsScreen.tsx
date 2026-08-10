@@ -12,11 +12,12 @@ import { CategoryBarChart } from '../../components/charts/CategoryBarChart';
 import { TeacherPieChart } from '../../components/charts/TeacherPieChart';
 import { TeacherAdvancedAnalytics } from '../../types/models';
 import { useResponsive, getGridColumns } from '../../utils/responsive';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 
 export function ClassAnalyticsScreen() {
   const user = useAppSelector((state) => state.auth.user);
   const { fontSize, spacing, containerPadding, isTablet, screenWidth } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const numColumns = getGridColumns(screenWidth, isTablet);
   const [analytics, setAnalytics] = useState<TeacherAdvancedAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,9 +70,9 @@ export function ClassAnalyticsScreen() {
   ]);
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
-      <View style={styles.topGlow} />
-      <View style={styles.bottomGlow} />
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }]}>
+      {isDark && <View style={styles.topGlow} />}
+      {isDark && <View style={styles.bottomGlow} />}
 
       <View
         style={{
@@ -86,83 +87,137 @@ export function ClassAnalyticsScreen() {
             fontSize: fontSize['2xl'],
             fontWeight: '800',
             marginBottom: spacing.lg,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           📊 Class Analytics
         </Text>
 
-        <View style={styles.filterCard}>
-          <Text style={{ color: '#FFFFFF', fontSize: fontSize.base, fontWeight: '700', marginBottom: spacing.sm }}>
+        <View style={[styles.filterCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+          <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.base, fontWeight: '700', marginBottom: spacing.sm }}>
             Filters
           </Text>
 
-          <Text style={styles.filterLabel}>Class</Text>
+          <Text style={[styles.filterLabel, !isDark && { color: colors.textSecondary }]}>Class</Text>
           <View style={styles.chipRow}>
             {['all', '8', '9', '10'].map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setSelectedClass(item as 'all' | '8' | '9' | '10')}
-                style={[styles.chip, selectedClass === item ? styles.chipActive : styles.chipInactive]}
+                style={[
+                  styles.chip,
+                  selectedClass === item
+                    ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                    : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                ]}
               >
-                <Text style={selectedClass === item ? styles.chipTextActive : styles.chipTextInactive}>
+                <Text style={
+                  selectedClass === item
+                    ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                    : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                }>
                   {item === 'all' ? 'All' : `Class ${item}`}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={[styles.filterLabel, { marginTop: spacing.sm }]}>Result Type</Text>
+          <Text style={[styles.filterLabel, { marginTop: spacing.sm }, !isDark && { color: colors.textSecondary }]}>Result Type</Text>
           <View style={styles.chipRow}>
             {['all', 'passed', 'failed'].map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setResultType(item as 'all' | 'passed' | 'failed')}
-                style={[styles.chip, resultType === item ? styles.chipActive : styles.chipInactive]}
+                style={[
+                  styles.chip,
+                  resultType === item
+                    ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                    : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                ]}
               >
-                <Text style={resultType === item ? styles.chipTextActive : styles.chipTextInactive}>
+                <Text style={
+                  resultType === item
+                    ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                    : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                }>
                   {item.charAt(0).toUpperCase() + item.slice(1)}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={[styles.filterLabel, { marginTop: spacing.sm }]}>Specific Student</Text>
+          <Text style={[styles.filterLabel, { marginTop: spacing.sm }, !isDark && { color: colors.textSecondary }]}>Specific Student</Text>
           <View style={styles.chipRow}>
             <Pressable
               onPress={() => setSelectedStudent('all')}
-              style={[styles.chip, selectedStudent === 'all' ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                selectedStudent === 'all'
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={selectedStudent === 'all' ? styles.chipTextActive : styles.chipTextInactive}>All Students</Text>
+              <Text style={
+                selectedStudent === 'all'
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>All Students</Text>
             </Pressable>
             {(analytics?.studentOptions ?? []).slice(0, 8).map((student) => (
               <Pressable
                 key={student.id}
                 onPress={() => setSelectedStudent(student.id)}
-                style={[styles.chip, selectedStudent === student.id ? styles.chipActive : styles.chipInactive]}
+                style={[
+                  styles.chip,
+                  selectedStudent === student.id
+                    ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                    : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                ]}
               >
-                <Text style={selectedStudent === student.id ? styles.chipTextActive : styles.chipTextInactive}>
+                <Text style={
+                  selectedStudent === student.id
+                    ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                    : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                }>
                   {student.name}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={[styles.filterLabel, { marginTop: spacing.sm }]}>Subject</Text>
+          <Text style={[styles.filterLabel, { marginTop: spacing.sm }, !isDark && { color: colors.textSecondary }]}>Subject</Text>
           <View style={styles.chipRow}>
             <Pressable
               onPress={() => setSelectedSubject('all')}
-              style={[styles.chip, selectedSubject === 'all' ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                selectedSubject === 'all'
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={selectedSubject === 'all' ? styles.chipTextActive : styles.chipTextInactive}>All Subjects</Text>
+              <Text style={
+                selectedSubject === 'all'
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>All Subjects</Text>
             </Pressable>
             {(analytics?.subjectOptions ?? []).map((subject) => (
               <Pressable
                 key={subject}
                 onPress={() => setSelectedSubject(subject)}
-                style={[styles.chip, selectedSubject === subject ? styles.chipActive : styles.chipInactive]}
+                style={[
+                  styles.chip,
+                  selectedSubject === subject
+                    ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                    : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                ]}
               >
-                <Text style={selectedSubject === subject ? styles.chipTextActive : styles.chipTextInactive}>{subject}</Text>
+                <Text style={
+                  selectedSubject === subject
+                    ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                    : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                }>{subject}</Text>
               </Pressable>
             ))}
           </View>
@@ -203,75 +258,75 @@ export function ClassAnalyticsScreen() {
 
         {isLoading ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
-            <ActivityIndicator size="small" color="#a855f7" />
-            <Text style={{ color: '#d8b4fe' }}>Loading class analytics...</Text>
+            <ActivityIndicator size="small" color={isDark ? '#a855f7' : colors.primary} />
+            <Text style={{ color: isDark ? '#d8b4fe' : colors.textSecondary }}>Loading class analytics...</Text>
           </View>
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg }}>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Attempts</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Attempts</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.xl, fontWeight: '800' }}>
                 {analytics?.filteredAttempts ?? 0}
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Average</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Average</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.xl, fontWeight: '800' }}>
                 {analytics?.averageScore ?? 0}%
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Pass Rate</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Pass Rate</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.xl, fontWeight: '800' }}>
                 {analytics?.passRate ?? 0}%
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Total Students</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Total Students</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.xl, fontWeight: '800' }}>
                 {analytics?.totalStudents ?? 0}
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Weak Students</Text>
-              <Text style={{ color: '#f87171', fontSize: fontSize.xl, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Weak Students</Text>
+              <Text style={{ color: isDark ? '#f87171' : colors.error, fontSize: fontSize.xl, fontWeight: '800' }}>
                 {analytics?.weakStudentsCount ?? 0}
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Weakest Subject</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.base, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Weakest Subject</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.base, fontWeight: '800' }}>
                 {analytics?.weakestSubject ?? '-'}
               </Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={{ color: '#a78bfa', fontSize: fontSize.sm }}>Strongest Subject</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: fontSize.base, fontWeight: '800' }}>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={{ color: isDark ? '#a78bfa' : colors.textSecondary, fontSize: fontSize.sm }}>Strongest Subject</Text>
+              <Text style={{ color: isDark ? '#FFFFFF' : colors.textPrimary, fontSize: fontSize.base, fontWeight: '800' }}>
                 {analytics?.strongestSubject ?? '-'}
               </Text>
             </View>
           </View>
         )}
 
-        <CustomCard variant="glass">
-          <PerformanceLineChart data={analytics?.trend ?? []} isDark />
+        <CustomCard variant={isDark ? 'glass' : 'default'}>
+          <PerformanceLineChart data={analytics?.trend ?? []} isDark={isDark} />
         </CustomCard>
 
-        <CustomCard variant="glass">
-          <SubjectBarChart data={analytics?.subjectAnalytics ?? []} isDark />
+        <CustomCard variant={isDark ? 'glass' : 'default'}>
+          <SubjectBarChart data={analytics?.subjectAnalytics ?? []} isDark={isDark} />
         </CustomCard>
 
         <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: spacing.md, marginTop: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <TeacherPieChart title="Pass vs Fail" data={analytics?.passFailPie ?? []} isDark />
+            <TeacherPieChart title="Pass vs Fail" data={analytics?.passFailPie ?? []} isDark={isDark} />
           </View>
           <View style={{ flex: 1 }}>
-            <CategoryBarChart title="Class-wise Average" data={analytics?.classPerformance ?? []} isDark />
+            <CategoryBarChart title="Class-wise Average" data={analytics?.classPerformance ?? []} isDark={isDark} />
           </View>
         </View>
 
         <View style={{ marginTop: spacing.md }}>
-          <TeacherPieChart title="Subject Distribution" data={analytics?.subjectDistribution ?? []} isDark />
+          <TeacherPieChart title="Subject Distribution" data={analytics?.subjectDistribution ?? []} isDark={isDark} />
         </View>
 
         <Text
@@ -280,7 +335,7 @@ export function ClassAnalyticsScreen() {
             fontWeight: '700',
             marginTop: spacing.xl,
             marginBottom: spacing.md,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           Weak Area Detection
@@ -318,7 +373,7 @@ export function ClassAnalyticsScreen() {
             fontWeight: '700',
             marginTop: spacing.xl,
             marginBottom: spacing.lg,
-            color: '#FFFFFF'
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           Performance by Subject
@@ -335,21 +390,21 @@ export function ClassAnalyticsScreen() {
               key={item.subject}
               style={isTablet ? { flex: 1 / numColumns, minWidth: '45%' } : { width: '100%' }}
             >
-              <CustomCard variant="glass">
+              <CustomCard variant={isDark ? 'glass' : 'default'}>
                 <Text
                   style={{
                     fontSize: fontSize.base,
                     fontWeight: '800',
                     marginBottom: spacing.sm,
-                    color: '#FFFFFF'
+                    color: isDark ? '#FFFFFF' : colors.textPrimary
                   }}
                 >
                   {item.subject}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#c4b5fd', marginBottom: spacing.xs }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#c4b5fd' : colors.textSecondary, marginBottom: spacing.xs }}>
                   📍 Attempts: {item.attempts}
                 </Text>
-                <Text style={{ fontSize: fontSize.sm, color: '#c4b5fd' }}>
+                <Text style={{ fontSize: fontSize.sm, color: isDark ? '#c4b5fd' : colors.textSecondary }}>
                   🎯 Avg Score: {item.averagePercentage}%
                 </Text>
               </CustomCard>
@@ -363,17 +418,17 @@ export function ClassAnalyticsScreen() {
             fontWeight: '700',
             marginTop: spacing.xl,
             marginBottom: spacing.md,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           Top Performers
         </Text>
         {(analytics?.topPerformers ?? []).map((student, index) => (
-          <CustomCard variant="glass" key={`top-${student.studentId}`}>
-            <Text style={{ fontWeight: '700', color: '#FFFFFF', marginBottom: 4 }}>
+          <CustomCard variant={isDark ? 'glass' : 'default'} key={`top-${student.studentId}`}>
+            <Text style={{ fontWeight: '700', color: isDark ? '#FFFFFF' : colors.textPrimary, marginBottom: 4 }}>
               #{index + 1} {student.studentName}
             </Text>
-            <Text style={{ color: '#cbd5e1' }}>Avg: {student.averageScore}% | Attempts: {student.attempts}</Text>
+            <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary }}>Avg: {student.averageScore}% | Attempts: {student.attempts}</Text>
           </CustomCard>
         ))}
 
@@ -383,23 +438,23 @@ export function ClassAnalyticsScreen() {
             fontWeight: '700',
             marginTop: spacing.lg,
             marginBottom: spacing.md,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           At Risk Students
         </Text>
         {(analytics?.weakStudents ?? []).length === 0 ? (
-          <CustomCard variant="glass">
-            <Text style={{ color: '#cbd5e1' }}>No weak students found for current filters.</Text>
+          <CustomCard variant={isDark ? 'glass' : 'default'}>
+            <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary }}>No weak students found for current filters.</Text>
           </CustomCard>
         ) : (
           (analytics?.weakStudents ?? []).map((student) => (
-            <CustomCard variant="glass" key={`weak-${student.studentId}`}>
-              <Text style={{ fontWeight: '700', color: '#FFFFFF', marginBottom: 4 }}>{student.studentName}</Text>
-              <Text style={{ color: '#f87171', fontWeight: '600', marginBottom: 2 }}>
+            <CustomCard variant={isDark ? 'glass' : 'default'} key={`weak-${student.studentId}`}>
+              <Text style={{ fontWeight: '700', color: isDark ? '#FFFFFF' : colors.textPrimary, marginBottom: 4 }}>{student.studentName}</Text>
+              <Text style={{ color: isDark ? '#f87171' : colors.error, fontWeight: '600', marginBottom: 2 }}>
                 Avg: {student.averageScore}%
               </Text>
-              <Text style={{ color: '#cbd5e1' }}>
+              <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary }}>
                 Weak Subject: {student.weakestSubject ?? '-'} ({student.weakestSubjectScore ?? 0}%)
               </Text>
             </CustomCard>
@@ -412,30 +467,30 @@ export function ClassAnalyticsScreen() {
             fontWeight: '700',
             marginTop: spacing.lg,
             marginBottom: spacing.md,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           Recent Attempts
         </Text>
         {(analytics?.rawAttempts ?? []).length === 0 ? (
-          <CustomCard variant="glass">
-            <Text style={{ color: '#cbd5e1' }}>No attempts found for current filters.</Text>
+          <CustomCard variant={isDark ? 'glass' : 'default'}>
+            <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary }}>No attempts found for current filters.</Text>
           </CustomCard>
         ) : (
           (analytics?.rawAttempts ?? []).slice(0, 10).map((attempt) => (
-            <CustomCard variant="glass" key={`attempt-${attempt.id}`}>
+            <CustomCard variant={isDark ? 'glass' : 'default'} key={`attempt-${attempt.id}`}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: '700', color: '#FFFFFF', marginBottom: 4 }}>
+                  <Text style={{ fontWeight: '700', color: isDark ? '#FFFFFF' : colors.textPrimary, marginBottom: 4 }}>
                     {attempt.studentName || attempt.studentId}
                   </Text>
-                  <Text style={{ color: '#a78bfa', marginBottom: 2 }}>
+                  <Text style={{ color: isDark ? '#a78bfa' : colors.primary, marginBottom: 2 }}>
                     Quiz: {attempt.quizTitle || attempt.quizId}
                   </Text>
-                  <Text style={{ color: attempt.percentage >= 40 ? '#4ade80' : '#f87171', fontWeight: '600' }}>
+                  <Text style={{ color: attempt.percentage >= 40 ? (isDark ? '#4ade80' : colors.success) : (isDark ? '#f87171' : colors.error), fontWeight: '600' }}>
                     Score: {attempt.percentage}%
                   </Text>
-                  <Text style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+                  <Text style={{ color: isDark ? '#64748b' : colors.textSecondary, fontSize: 12, marginTop: 4 }}>
                     Completed: {new Date(attempt.completedAt).toLocaleString()}
                   </Text>
                 </View>
@@ -456,7 +511,6 @@ export function ClassAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#160629',
   },
   topGlow: {
     position: 'absolute',
@@ -506,21 +560,39 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 10,
   },
-  chipActive: {
+  chipActiveDark: {
     backgroundColor: 'rgba(168, 85, 247, 0.25)',
     borderColor: '#a855f7',
   },
-  chipInactive: {
+  chipInactiveDark: {
     backgroundColor: 'rgba(15, 10, 44, 0.5)',
     borderColor: 'rgba(168, 85, 247, 0.3)',
   },
-  chipTextActive: {
+  chipTextActiveDark: {
     color: '#f3e8ff',
     fontWeight: '700',
     fontSize: 12,
   },
-  chipTextInactive: {
+  chipTextInactiveDark: {
     color: '#c4b5fd',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  chipActiveLight: {
+    backgroundColor: '#1d4ed8',
+    borderColor: '#1d4ed8',
+  },
+  chipInactiveLight: {
+    backgroundColor: '#ffffff',
+    borderColor: '#bfdbfe',
+  },
+  chipTextActiveLight: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  chipTextInactiveLight: {
+    color: '#1d4ed8',
     fontWeight: '600',
     fontSize: 12,
   },

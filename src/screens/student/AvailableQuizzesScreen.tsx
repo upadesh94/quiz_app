@@ -10,11 +10,13 @@ import { useResponsive, getGridColumns } from '../../utils/responsive';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { getCollection, where } from '../../firebase/firestore';
 import { CLASS_LEVELS, getSubjectsForClass } from '../../services/utils/Constants';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AvailableQuizzes'>;
 
 export function AvailableQuizzesScreen({ navigation }: Props) {
   const { fontSize, spacing, containerPadding, isTablet, screenWidth } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [attemptedQuizIds, setAttemptedQuizIds] = useState<Set<string>>(new Set());
@@ -87,20 +89,21 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
               fontSize: fontSize.lg,
               fontWeight: '600',
               marginBottom: spacing.sm,
+              color: isDark ? '#FFFFFF' : colors.textPrimary,
             }}
           >
             {quiz.title}
           </Text>
-          <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+          <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
             Subject: {quiz.subject}
           </Text>
-          <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+          <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
             Class: {quiz.classLevel}
           </Text>
-          <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.xs }}>
+          <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.xs }}>
             Questions: {quiz.totalQuestions}
           </Text>
-          <Text style={{ fontSize: fontSize.sm, color: '#334155', marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', marginBottom: spacing.md }}>
             Duration: {quiz.timeLimitMinutes} min
           </Text>
           <CustomButton
@@ -115,25 +118,25 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingHorizontal: containerPadding, paddingBottom: 24 }}>
-      <View style={styles.headerCard}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb' }]} contentContainerStyle={{ paddingHorizontal: containerPadding, paddingBottom: 24 }}>
+      <View style={[styles.headerCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#eff6ff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#dbeafe' }]}>
         <Text
           style={{
             fontSize: fontSize['2xl'],
             fontWeight: '800',
             marginBottom: spacing.xs,
-            color: '#0f172a',
+            color: isDark ? '#FFFFFF' : '#0f172a',
           }}
         >
           📚 Subject Quizzes
         </Text>
-        <Text style={{ fontSize: fontSize.base, color: '#475569', lineHeight: fontSize.base * 1.5 }}>
+        <Text style={{ fontSize: fontSize.base, color: isDark ? '#cbd5e1' : '#475569', lineHeight: fontSize.base * 1.5 }}>
           Choose your class and subject to see only the quizzes that match the school syllabus.
         </Text>
       </View>
 
-      <View style={styles.filterCard}>
-        <Text style={[styles.filterLabel, { fontSize: fontSize.sm }]}>Class Level</Text>
+      <View style={[styles.filterCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#e2e8f0' }]}>
+        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Class Level</Text>
         <View style={styles.chipRow}>
           {CLASS_LEVELS.map((classLevel) => (
             <Pressable
@@ -142,37 +145,61 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
                 setSelectedClassLevel(classLevel);
                 setSelectedSubject('all');
               }}
-              style={[styles.chip, selectedClassLevel === classLevel ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                selectedClassLevel === classLevel 
+                  ? [styles.chipActive, isDark && { backgroundColor: '#a855f7', borderColor: '#a855f7' }]
+                  : [styles.chipInactive, isDark && { backgroundColor: 'transparent', borderColor: 'rgba(168, 85, 247, 0.5)' }]
+              ]}
             >
-              <Text style={selectedClassLevel === classLevel ? styles.chipTextActive : styles.chipTextInactive}>
+              <Text style={[
+                selectedClassLevel === classLevel ? styles.chipTextActive : styles.chipTextInactive,
+                isDark && selectedClassLevel !== classLevel && { color: '#d8b4fe' }
+              ]}>
                 Class {classLevel}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md }]}>Subject</Text>
+        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Subject</Text>
         <View style={styles.chipRow}>
           <Pressable
             onPress={() => setSelectedSubject('all')}
-            style={[styles.chip, selectedSubject === 'all' ? styles.chipActive : styles.chipInactive]}
+            style={[
+              styles.chip,
+              selectedSubject === 'all' 
+                ? [styles.chipActive, isDark && { backgroundColor: '#a855f7', borderColor: '#a855f7' }]
+                : [styles.chipInactive, isDark && { backgroundColor: 'transparent', borderColor: 'rgba(168, 85, 247, 0.5)' }]
+            ]}
           >
-            <Text style={selectedSubject === 'all' ? styles.chipTextActive : styles.chipTextInactive}>All Subjects</Text>
+            <Text style={[
+              selectedSubject === 'all' ? styles.chipTextActive : styles.chipTextInactive,
+              isDark && selectedSubject !== 'all' && { color: '#d8b4fe' }
+            ]}>All Subjects</Text>
           </Pressable>
           {subjectOptions.map((subject) => (
             <Pressable
               key={subject}
               onPress={() => setSelectedSubject(subject)}
-              style={[styles.chip, selectedSubject === subject ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                selectedSubject === subject
+                  ? [styles.chipActive, isDark && { backgroundColor: '#a855f7', borderColor: '#a855f7' }]
+                  : [styles.chipInactive, isDark && { backgroundColor: 'transparent', borderColor: 'rgba(168, 85, 247, 0.5)' }]
+              ]}
             >
-              <Text style={selectedSubject === subject ? styles.chipTextActive : styles.chipTextInactive}>{subject}</Text>
+              <Text style={[
+                selectedSubject === subject ? styles.chipTextActive : styles.chipTextInactive,
+                isDark && selectedSubject !== subject && { color: '#d8b4fe' }
+              ]}>{subject}</Text>
             </Pressable>
           ))}
         </View>
       </View>
 
       {filteredQuizzes.length === 0 ? (
-        <Text style={{ fontSize: fontSize.base, color: '#666', marginTop: spacing.xl }}>
+        <Text style={{ fontSize: fontSize.base, color: isDark ? '#94a3b8' : '#666', marginTop: spacing.xl }}>
           No quizzes available for Class {selectedClassLevel}{selectedSubject !== 'all' ? ` / ${selectedSubject}` : ''}.
         </Text>
       ) : (
@@ -193,23 +220,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingVertical: 16,
-    backgroundColor: '#f9fafb',
   },
   headerCard: {
-    backgroundColor: '#eff6ff',
     borderRadius: 20,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#dbeafe',
   },
   filterCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   filterLabel: {
     color: '#0f172a',

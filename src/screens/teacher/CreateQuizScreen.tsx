@@ -6,12 +6,13 @@ import { RootStackParamList } from '../../navigation/types';
 import { QuizService } from '../../services/quiz/QuizService';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii } from '../../utils/theme';
+import { useAppTheme, radii } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateQuiz'>;
 
 export function CreateQuizScreen({ navigation }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [message, setMessage] = useState('');
 
@@ -47,7 +48,7 @@ export function CreateQuizScreen({ navigation }: Props) {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }]}>
       <View
         style={{
           maxWidth: isTablet ? 600 : '100%',
@@ -61,25 +62,25 @@ export function CreateQuizScreen({ navigation }: Props) {
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.lg,
-            color: colors.textPrimary,
+            color: isDark ? '#FFFFFF' : colors.textPrimary,
           }}
         >
           ✏️ Create New Quiz
         </Text>
         <View
           style={{
-            backgroundColor: '#EEF2FF',
+            backgroundColor: isDark ? 'rgba(124, 58, 237, 0.1)' : '#EEF2FF',
             borderRadius: radii.md,
             borderWidth: 1,
-            borderColor: '#C7D2FE',
+            borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : '#C7D2FE',
             padding: spacing.md,
             marginBottom: spacing.lg,
           }}
         >
-          <Text style={{ color: colors.secondary, fontSize: fontSize.sm, fontWeight: '700', marginBottom: spacing.xs }}>
+          <Text style={{ color: isDark ? '#a78bfa' : colors.secondary, fontSize: fontSize.sm, fontWeight: '700', marginBottom: spacing.xs }}>
             Step 1 of 2: Quiz Setup
           </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm, lineHeight: fontSize.sm * 1.5 }}>
+          <Text style={{ color: isDark ? '#cbd5e1' : colors.textSecondary, fontSize: fontSize.sm, lineHeight: fontSize.sm * 1.5 }}>
             Fill quiz details, choose settings, then continue to Step 2 to add questions using manual input or quick paste.
           </Text>
         </View>
@@ -104,6 +105,5 @@ export function CreateQuizScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
 });

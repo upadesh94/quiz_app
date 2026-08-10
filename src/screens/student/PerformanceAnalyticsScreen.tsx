@@ -8,10 +8,11 @@ import { PerformanceService } from '../../services/analytics/PerformanceService'
 import { StudentPerformanceAnalytics } from '../../types/models';
 import { getSubjectsForClass } from '../../services/utils/Constants';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii } from '../../utils/theme';
 
 export function PerformanceAnalyticsScreen() {
   const { fontSize, spacing } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [analytics, setAnalytics] = useState<StudentPerformanceAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,35 +53,53 @@ export function PerformanceAnalyticsScreen() {
   }, [selectedSubject, subjectOptions]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : colors.background }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.background}>
-        <View style={styles.topGlow} />
-        <View style={styles.bottomGlow} />
+        {isDark && <View style={styles.topGlow} />}
+        {isDark && <View style={styles.bottomGlow} />}
 
-        <View style={styles.heroCard}>
-          <Text style={styles.title}>Performance Analytics</Text>
-          <Text style={styles.heroText}>
+        <View style={[styles.heroCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+          <Text style={[styles.title, !isDark && { color: colors.textPrimary }]}>Performance Analytics</Text>
+          <Text style={[styles.heroText, !isDark && { color: colors.textSecondary }]}>
             Review your own progress for your class. Use the subject filter to focus on the areas you want to improve.
           </Text>
         </View>
 
-        <CustomCard variant="glass">
-          <Text style={[styles.filterTitle, { fontSize: fontSize.base }]}>Filters</Text>
-          <Text style={[styles.filterLabel, { marginTop: spacing.xs }]}>Subject</Text>
+        <CustomCard variant={isDark ? 'glass' : 'default'}>
+          <Text style={[styles.filterTitle, { fontSize: fontSize.base }, !isDark && { color: colors.textPrimary }]}>Filters</Text>
+          <Text style={[styles.filterLabel, { marginTop: spacing.xs }, !isDark && { color: colors.textSecondary }]}>Subject</Text>
           <View style={styles.chipRow}>
             <Pressable
               onPress={() => setSelectedSubject('all')}
-              style={[styles.chip, selectedSubject === 'all' ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                selectedSubject === 'all'
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={selectedSubject === 'all' ? styles.chipTextActive : styles.chipTextInactive}>All Subjects</Text>
+              <Text style={[
+                selectedSubject === 'all'
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              ]}>All Subjects</Text>
             </Pressable>
             {subjectOptions.map((subject) => (
               <Pressable
                 key={subject}
                 onPress={() => setSelectedSubject(subject)}
-                style={[styles.chip, selectedSubject === subject ? styles.chipActive : styles.chipInactive]}
+                style={[
+                  styles.chip,
+                  selectedSubject === subject
+                    ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                    : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                ]}
               >
-                <Text style={selectedSubject === subject ? styles.chipTextActive : styles.chipTextInactive}>{subject}</Text>
+                <Text style={[
+                  selectedSubject === subject
+                    ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                    : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                ]}>{subject}</Text>
               </Pressable>
             ))}
           </View>
@@ -88,37 +107,37 @@ export function PerformanceAnalyticsScreen() {
 
       {isLoading ? (
         <View style={styles.loaderBox}>
-          <ActivityIndicator size="small" color="#a855f7" />
-          <Text style={styles.loaderText}>Loading analytics...</Text>
+          <ActivityIndicator size="small" color={isDark ? '#a855f7' : colors.primary} />
+          <Text style={[styles.loaderText, !isDark && { color: colors.textSecondary }]}>Loading analytics...</Text>
         </View>
       ) : (
         <>
           <View style={styles.summaryRow}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Average</Text>
-              <Text style={styles.summaryValue}>{analytics?.averageScore ?? 0}%</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Average</Text>
+              <Text style={[styles.summaryValue, !isDark && { color: colors.textPrimary }]}>{analytics?.averageScore ?? 0}%</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Attempts</Text>
-              <Text style={styles.summaryValue}>{analytics?.attemptsCount ?? 0}</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Attempts</Text>
+              <Text style={[styles.summaryValue, !isDark && { color: colors.textPrimary }]}>{analytics?.attemptsCount ?? 0}</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Pass Rate</Text>
-              <Text style={styles.summaryValue}>{analytics?.passRate ?? 0}%</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Pass Rate</Text>
+              <Text style={[styles.summaryValue, !isDark && { color: colors.textPrimary }]}>{analytics?.passRate ?? 0}%</Text>
             </View>
           </View>
 
           <View style={styles.summaryRow}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Best Subject</Text>
-              <Text style={styles.summaryValueSmall}>{analytics?.strongestSubject ?? '-'}</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Best Subject</Text>
+              <Text style={[styles.summaryValueSmall, !isDark && { color: colors.textPrimary }]}>{analytics?.strongestSubject ?? '-'}</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Weak Subject</Text>
-              <Text style={styles.summaryValueSmall}>{analytics?.weakestSubject ?? '-'}</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Weak Subject</Text>
+              <Text style={[styles.summaryValueSmall, !isDark && { color: colors.textPrimary }]}>{analytics?.weakestSubject ?? '-'}</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Improvement</Text>
+            <View style={[styles.summaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+              <Text style={[styles.summaryTitle, !isDark && { color: colors.textSecondary }]}>Improvement</Text>
               <Text
                 style={[
                   styles.summaryValueSmall,
@@ -131,15 +150,15 @@ export function PerformanceAnalyticsScreen() {
             </View>
           </View>
 
-          <PerformanceLineChart data={analytics?.trend ?? []} isDark />
-          <SubjectBarChart data={analytics?.subjectAnalytics ?? []} isDark />
+          <PerformanceLineChart data={analytics?.trend ?? []} isDark={isDark} />
+          <SubjectBarChart data={analytics?.subjectAnalytics ?? []} isDark={isDark} />
 
           <View style={styles.subjectSummaryGrid}>
             {(analytics?.subjectAnalytics ?? []).map((item) => (
-              <View key={item.subject} style={styles.subjectSummaryCard}>
-                <Text style={styles.subjectSummaryTitle}>{item.subject}</Text>
-                <Text style={styles.subjectSummaryValue}>{item.averagePercentage}%</Text>
-                <Text style={styles.subjectSummaryMeta}>Attempts: {item.attempts}</Text>
+              <View key={item.subject} style={[styles.subjectSummaryCard, !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }]}>
+                <Text style={[styles.subjectSummaryTitle, !isDark && { color: colors.textSecondary }]}>{item.subject}</Text>
+                <Text style={[styles.subjectSummaryValue, !isDark && { color: colors.textPrimary }]}>{item.averagePercentage}%</Text>
+                <Text style={[styles.subjectSummaryMeta, !isDark && { color: colors.textSecondary }]}>Attempts: {item.attempts}</Text>
               </View>
             ))}
           </View>
@@ -153,7 +172,6 @@ export function PerformanceAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#160629',
   },
   contentContainer: {
     flexGrow: 1,
@@ -226,21 +244,39 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
   },
-  chipActive: {
+  chipActiveDark: {
     backgroundColor: 'rgba(168, 85, 247, 0.25)',
     borderColor: '#a855f7',
   },
-  chipInactive: {
+  chipInactiveDark: {
     backgroundColor: 'rgba(15, 10, 44, 0.5)',
     borderColor: 'rgba(168, 85, 247, 0.3)',
   },
-  chipTextActive: {
+  chipTextActiveDark: {
     color: '#f3e8ff',
     fontSize: 12,
     fontWeight: '700',
   },
-  chipTextInactive: {
+  chipTextInactiveDark: {
     color: '#c4b5fd',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  chipActiveLight: {
+    backgroundColor: '#1d4ed8',
+    borderColor: '#1d4ed8',
+  },
+  chipInactiveLight: {
+    backgroundColor: '#ffffff',
+    borderColor: '#bfdbfe',
+  },
+  chipTextActiveLight: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chipTextInactiveLight: {
+    color: '#1d4ed8',
     fontSize: 12,
     fontWeight: '600',
   },

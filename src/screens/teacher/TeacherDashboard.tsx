@@ -3,18 +3,19 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TeacherDashboard'>;
 
 export function TeacherDashboard({ navigation }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, { backgroundColor: isDark ? '#160629' : colors.background }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 20 }}>
         <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
-          <View style={styles.heroCard}>
+          <View style={[styles.heroCard, { backgroundColor: colors.secondary }]}>
             <Text style={{ color: '#bbf7d0', fontSize: fontSize.sm, fontWeight: '700' }}>TEACHER CONSOLE</Text>
             <Text style={{ color: '#ffffff', fontSize: fontSize['2xl'], fontWeight: '800', marginTop: spacing.xs }}>
               Build smarter classrooms
@@ -25,37 +26,37 @@ export function TeacherDashboard({ navigation }: Props) {
           </View>
 
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Focus</Text>
-              <Text style={styles.statValue}>Class Quality</Text>
+            <View style={[styles.statCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
+              <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Focus</Text>
+              <Text style={[styles.statValue, isDark && { color: '#FFFFFF' }]}>Class Quality</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Workflow</Text>
-              <Text style={styles.statValue}>Review Daily</Text>
+            <View style={[styles.statCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
+              <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Workflow</Text>
+              <Text style={[styles.statValue, isDark && { color: '#FFFFFF' }]}>Review Daily</Text>
             </View>
           </View>
 
-          <Text style={{ marginTop: spacing.xl, marginBottom: spacing.md, fontSize: fontSize.lg, fontWeight: '700', color: '#0f172a' }}>
+          <Text style={{ marginTop: spacing.xl, marginBottom: spacing.md, fontSize: fontSize.lg, fontWeight: '700', color: isDark ? '#FFFFFF' : '#0f172a' }}>
             Quick Actions
           </Text>
 
           <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: spacing.md }}>
-            <Pressable style={styles.actionCard} onPress={() => navigation.navigate('CreateQuiz')}>
+            <Pressable style={[styles.actionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]} onPress={() => navigation.navigate('CreateQuiz')}>
               <Text style={styles.actionEmoji}>🧠</Text>
-              <Text style={styles.actionTitle}>Create Quiz</Text>
-              <Text style={styles.actionSub}>Publish a new test for class 8, 9, or 10.</Text>
+              <Text style={[styles.actionTitle, isDark && { color: '#FFFFFF' }]}>Create Quiz</Text>
+              <Text style={[styles.actionSub, isDark && { color: '#cbd5e1' }]}>Publish a new test for class 8, 9, or 10.</Text>
             </Pressable>
-            <Pressable style={styles.actionCard} onPress={() => navigation.navigate('ManageStudents')}>
+            <Pressable style={[styles.actionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]} onPress={() => navigation.navigate('ManageStudents')}>
               <Text style={styles.actionEmoji}>👥</Text>
-              <Text style={styles.actionTitle}>Manage Students</Text>
-              <Text style={styles.actionSub}>Approve requests and edit student details.</Text>
+              <Text style={[styles.actionTitle, isDark && { color: '#FFFFFF' }]}>Manage Students</Text>
+              <Text style={[styles.actionSub, isDark && { color: '#cbd5e1' }]}>Approve requests and edit student details.</Text>
             </Pressable>
           </View>
 
-          <Pressable style={[styles.actionCard, { marginTop: spacing.md }]} onPress={() => navigation.navigate('ClassAnalytics')}>
+          <Pressable style={[styles.actionCard, { marginTop: spacing.md, backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]} onPress={() => navigation.navigate('ClassAnalytics')}>
             <Text style={styles.actionEmoji}>📊</Text>
-            <Text style={styles.actionTitle}>Class Analytics</Text>
-            <Text style={styles.actionSub}>Track pass rates, averages and subject trends.</Text>
+            <Text style={[styles.actionTitle, isDark && { color: '#FFFFFF' }]}>Class Analytics</Text>
+            <Text style={[styles.actionSub, isDark && { color: '#cbd5e1' }]}>Track pass rates, averages and subject trends.</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -66,7 +67,6 @@ export function TeacherDashboard({ navigation }: Props) {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scroll: {
     flex: 1,
@@ -75,37 +75,30 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   heroCard: {
-    backgroundColor: colors.secondary,
     borderRadius: radii.lg,
     padding: 18,
     ...shadows.card,
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.card,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
     padding: 12,
     ...shadows.soft,
   },
   statLabel: {
-    color: colors.textSecondary,
     fontSize: 12,
     marginBottom: 6,
     fontWeight: '600',
   },
   statValue: {
-    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: '800',
   },
   actionCard: {
     flex: 1,
-    backgroundColor: colors.card,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
     padding: 16,
     ...shadows.card,
   },
@@ -114,13 +107,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   actionTitle: {
-    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
   },
   actionSub: {
-    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
   },

@@ -1,4 +1,7 @@
-export const colors = {
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/store';
+
+export const lightColors = {
   primary: '#2563EB',
   secondary: '#7C3AED',
   background: '#F8FAFC',
@@ -10,6 +13,28 @@ export const colors = {
   border: '#E2E8F0',
   darkBackground: '#020617',
 } as const;
+
+export const darkColors = {
+  primary: '#3B82F6',
+  secondary: '#8B5CF6',
+  background: '#0F172A',
+  card: '#1E293B',
+  textPrimary: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  success: '#22C55E',
+  error: '#EF4444',
+  border: '#334155',
+  darkBackground: '#020617',
+} as const;
+
+// Backward compatibility for components not yet refactored to useAppTheme
+export const colors = lightColors;
+
+export function useAppTheme() {
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const themeColors = mode === 'dark' ? darkColors : lightColors;
+  return { colors: themeColors, isDark: mode === 'dark' };
+}
 
 export const radii = {
   sm: 12,

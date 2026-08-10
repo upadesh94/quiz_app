@@ -1,24 +1,33 @@
 import React, { PropsWithChildren } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 
 type Props = PropsWithChildren & {
   variant?: 'default' | 'glass';
 };
 
 export function CustomCard({ children, variant = 'default' }: Props) {
-  return <View style={variant === 'glass' ? styles.glassCard : styles.card}>{children}</View>;
+  const { colors, isDark } = useAppTheme();
+
+  return (
+    <View
+      style={[
+        variant === 'glass' || (variant === 'default' && isDark) ? styles.glassCard : styles.card,
+        variant === 'default' && !isDark && { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
     ...shadows.card,
   },
   glassCard: {

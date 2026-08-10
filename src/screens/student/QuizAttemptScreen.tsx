@@ -10,12 +10,13 @@ import { AttemptService } from '../../services/quiz/AttemptService';
 import { QuizService } from '../../services/quiz/QuizService';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizAttempt'>;
 
 export function QuizAttemptScreen({ navigation, route }: Props) {
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -217,15 +218,15 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
 
   if (questions.length === 0) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontSize: fontSize.base, color: '#334155' }}>Loading questions...</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#160629' : colors.background }]}>
+        <Text style={{ fontSize: fontSize.base, color: isDark ? '#cbd5e1' : '#334155' }}>Loading questions...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={{ ...styles.container, paddingHorizontal: containerPadding }}
+      style={{ ...styles.container, backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }}
       contentContainerStyle={{ flexGrow: 1, paddingVertical: spacing.lg, paddingBottom: 100 }}
     >
       <View
@@ -240,9 +241,9 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: colors.card,
+            backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card,
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border,
             borderRadius: radii.lg,
             padding: spacing.md,
             marginBottom: spacing.lg,
@@ -276,7 +277,7 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
           <View
             style={{
               borderRadius: 999,
-              backgroundColor: isTimeLow ? '#FEE2E2' : '#DBEAFE',
+              backgroundColor: isTimeLow ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2') : (isDark ? 'rgba(59, 130, 246, 0.2)' : '#DBEAFE'),
               paddingHorizontal: spacing.md,
               paddingVertical: spacing.xs,
             }}
@@ -316,9 +317,9 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
                 disabled={isFirstQuestion}
                 style={{
                   flex: 1,
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#FFFFFF',
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border,
                   borderRadius: radii.md,
                   paddingVertical: spacing.md,
                   alignItems: 'center',
@@ -331,13 +332,15 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
                 onPress={onSkipCurrent}
                 style={{
                   flex: 1,
-                  backgroundColor: '#EEF2FF',
+                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.1)' : '#EEF2FF',
                   borderRadius: radii.md,
                   paddingVertical: spacing.md,
                   alignItems: 'center',
+                  borderWidth: isDark ? 1 : 0,
+                  borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : 'transparent',
                 }}
               >
-                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.lg }}>SKIP</Text>
+                <Text style={{ color: isDark ? '#a78bfa' : colors.secondary, fontWeight: '700', fontSize: fontSize.lg }}>SKIP</Text>
               </Pressable>
               <Pressable
                 onPress={() => navigateQuestion(currentQuestionIndex + 1)}
@@ -401,17 +404,17 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
             </View>
 
             <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
-              <View style={{ flex: 1, backgroundColor: '#FEE2E2', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-                <Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.sm }}>Skipped</Text>
-                <Text style={{ color: colors.error, fontWeight: '800', fontSize: fontSize.xl }}>{skippedQuestionIds.length}</Text>
+              <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#fca5a5' : colors.error, fontWeight: '700', fontSize: fontSize.sm }}>Skipped</Text>
+                <Text style={{ color: isDark ? '#fca5a5' : colors.error, fontWeight: '800', fontSize: fontSize.xl }}>{skippedQuestionIds.length}</Text>
               </View>
-              <View style={{ flex: 1, backgroundColor: '#EEF2FF', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: fontSize.sm }}>Remaining</Text>
-                <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: fontSize.xl }}>{remainingCount}</Text>
+              <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#EEF2FF', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#a78bfa' : colors.secondary, fontWeight: '700', fontSize: fontSize.sm }}>Remaining</Text>
+                <Text style={{ color: isDark ? '#a78bfa' : colors.secondary, fontWeight: '800', fontSize: fontSize.xl }}>{remainingCount}</Text>
               </View>
-              <View style={{ flex: 1, backgroundColor: '#DCFCE7', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
-                <Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.sm }}>Attempted</Text>
-                <Text style={{ color: colors.success, fontWeight: '800', fontSize: fontSize.xl }}>{attemptedCount}</Text>
+              <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#86efac' : colors.success, fontWeight: '700', fontSize: fontSize.sm }}>Attempted</Text>
+                <Text style={{ color: isDark ? '#86efac' : colors.success, fontWeight: '800', fontSize: fontSize.xl }}>{attemptedCount}</Text>
               </View>
             </View>
 
@@ -422,16 +425,16 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
                 const isAttempted = !!answers[question.id];
                 const isSkipped = skippedQuestionIds.includes(question.id);
 
-                let backgroundColor = '#E2E8F0';
-                let borderColor = 'transparent';
+                let backgroundColor = isDark ? 'rgba(15, 10, 44, 0.88)' : '#E2E8F0';
+                let borderColor = isDark ? 'rgba(168, 85, 247, 0.3)' : 'transparent';
                 if (isAttempted) {
-                  backgroundColor = '#DCFCE7';
+                  backgroundColor = isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7';
                 }
                 if (isSkipped) {
-                  backgroundColor = '#FEE2E2';
+                  backgroundColor = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2';
                 }
                 if (isCurrent) {
-                  backgroundColor = '#DBEAFE';
+                  backgroundColor = isDark ? 'rgba(59, 130, 246, 0.3)' : '#DBEAFE';
                   borderColor = colors.primary;
                 }
 
@@ -465,7 +468,6 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
     userSelect: 'none',
   } as any,
 });

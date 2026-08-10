@@ -14,11 +14,13 @@ import { PerformanceService } from '../../services/analytics/PerformanceService'
 import { clearAuth } from '../../store/slices/authSlice';
 import { StudentPerformanceAnalytics } from '../../types/models';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 export function ProfileScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -109,7 +111,7 @@ export function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingHorizontal: containerPadding }]}>
+    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb', paddingHorizontal: containerPadding }]}>
       <View
         style={{
           maxWidth: isTablet ? 500 : '100%',
@@ -123,7 +125,7 @@ export function ProfileScreen() {
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.md,
-            color: '#0f172a',
+            color: isDark ? '#FFFFFF' : '#0f172a',
           }}
         >
           👤 Profile
@@ -132,7 +134,7 @@ export function ProfileScreen() {
           style={{
             fontSize: fontSize.base,
             marginBottom: spacing.lg,
-            color: '#334155',
+            color: isDark ? '#cbd5e1' : '#334155',
             lineHeight: fontSize.base * 1.5,
           }}
         >
@@ -141,17 +143,17 @@ export function ProfileScreen() {
 
         {user?.role === 'student' ? (
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
-            <View style={styles.scoreCard}>
-              <Text style={styles.scoreLabel}>Average</Text>
-              <Text style={styles.scoreValue}>{analytics?.averageScore ?? 0}%</Text>
+            <View style={[styles.scoreCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+              <Text style={[styles.scoreLabel, isDark && { color: '#a78bfa' }]}>Average</Text>
+              <Text style={[styles.scoreValue, isDark && { color: '#FFFFFF' }]}>{analytics?.averageScore ?? 0}%</Text>
             </View>
-            <View style={styles.scoreCard}>
-              <Text style={styles.scoreLabel}>Attempts</Text>
-              <Text style={styles.scoreValue}>{analytics?.attemptsCount ?? 0}</Text>
+            <View style={[styles.scoreCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+              <Text style={[styles.scoreLabel, isDark && { color: '#a78bfa' }]}>Attempts</Text>
+              <Text style={[styles.scoreValue, isDark && { color: '#FFFFFF' }]}>{analytics?.attemptsCount ?? 0}</Text>
             </View>
-            <View style={styles.scoreCard}>
-              <Text style={styles.scoreLabel}>Pass Rate</Text>
-              <Text style={styles.scoreValue}>{analytics?.passRate ?? 0}%</Text>
+            <View style={[styles.scoreCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+              <Text style={[styles.scoreLabel, isDark && { color: '#a78bfa' }]}>Pass Rate</Text>
+              <Text style={[styles.scoreValue, isDark && { color: '#FFFFFF' }]}>{analytics?.passRate ?? 0}%</Text>
             </View>
           </View>
         ) : null}
@@ -202,7 +204,6 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   scoreCard: {
     flex: 1,

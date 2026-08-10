@@ -8,12 +8,14 @@ import { setAuth } from '../../store/slices/authSlice';
 import { AuthService } from '../../services/auth/AuthService';
 import { ErrorHandler } from '../../services/utils/ErrorHandler';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation, route }: Props) {
   const dispatch = useAppDispatch();
   const { fontSize, containerPadding, isTablet } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -55,10 +57,10 @@ export function LoginScreen({ navigation, route }: Props) {
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.background}>
-        <View style={styles.topGlow} />
-        <View style={styles.bottomGlow} />
-        <View style={styles.dots} />
+      <View style={[styles.background, { backgroundColor: isDark ? '#160629' : colors.background }]}>
+        {isDark && <View style={styles.topGlow} />}
+        {isDark && <View style={styles.bottomGlow} />}
+        {isDark && <View style={styles.dots} />}
 
         <View style={[styles.container, { paddingHorizontal: containerPadding }]}> 
           <View style={{ maxWidth: isTablet ? 520 : '100%', alignSelf: 'center', width: '100%' }}>
@@ -66,32 +68,38 @@ export function LoginScreen({ navigation, route }: Props) {
               <BrandLogo size={isTablet ? 190 : 160} />
             </View>
 
-            <View style={styles.card}>
-              <View style={styles.lockBadge}>
+            <View style={[
+              styles.card,
+              !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }
+            ]}>
+              <View style={[
+                styles.lockBadge,
+                !isDark && { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: colors.primary }
+              ]}>
                 <Text style={styles.lockIcon}>🔒</Text>
               </View>
 
-              <Text style={[styles.title, { fontSize: fontSize['3xl'] }]}>Welcome Back!</Text>
-              <Text style={[styles.subtitle, { fontSize: fontSize.base }]}>Login to continue your quiz journey</Text>
+              <Text style={[styles.title, { fontSize: fontSize['3xl'] }, !isDark && { color: colors.textPrimary }]}>Welcome Back!</Text>
+              <Text style={[styles.subtitle, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>Login to continue your quiz journey</Text>
 
-              <View style={styles.roleChip}>
-                <Text style={styles.roleChipText}>{roleLabel} Login</Text>
+              <View style={[styles.roleChip, !isDark && { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                <Text style={[styles.roleChipText, !isDark && { color: colors.primary }]}>{roleLabel} Login</Text>
               </View>
 
               <View style={styles.divider} />
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <View style={styles.inputRow}>
-                <View style={styles.inputIcon}>
+              <View style={[styles.inputRow, !isDark && { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={[styles.inputIcon, !isDark && { backgroundColor: colors.primary }]}>
                   <Text style={styles.inputIconText}>✉</Text>
                 </View>
                 <TextInput
                   value={username}
                   onChangeText={setUsername}
                   placeholder="Enter your email"
-                  placeholderTextColor="#a78bfa"
-                  style={styles.input}
+                  placeholderTextColor={isDark ? "#a78bfa" : colors.textSecondary}
+                  style={[styles.input, !isDark && { color: colors.textPrimary }]}
                   autoCapitalize="none"
                   autoCorrect={false}
                   textContentType="username"
@@ -99,16 +107,16 @@ export function LoginScreen({ navigation, route }: Props) {
                 />
               </View>
 
-              <View style={styles.inputRow}>
-                <View style={styles.inputIcon}>
+              <View style={[styles.inputRow, !isDark && { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={[styles.inputIcon, !isDark && { backgroundColor: colors.primary }]}>
                   <Text style={styles.inputIconText}>🔒</Text>
                 </View>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Enter your password"
-                  placeholderTextColor="#a78bfa"
-                  style={styles.input}
+                  placeholderTextColor={isDark ? "#a78bfa" : colors.textSecondary}
+                  style={[styles.input, !isDark && { color: colors.textPrimary }]}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -118,7 +126,7 @@ export function LoginScreen({ navigation, route }: Props) {
                   onPress={() => setShowPassword((current) => !current)}
                   style={({ pressed }) => [styles.eyeButton, pressed ? { opacity: 0.7 } : null]}
                 >
-                  <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁'}</Text>
+                  <Text style={[styles.eyeText, !isDark && { color: colors.textSecondary }]}>{showPassword ? '🙈' : '👁'}</Text>
                 </Pressable>
               </View>
 
@@ -138,15 +146,15 @@ export function LoginScreen({ navigation, route }: Props) {
               <View style={styles.linksRow}>
                 <View style={styles.linkLine} />
                 <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={styles.linkText}>Forgot password?</Text>
+                  <Text style={[styles.linkText, !isDark && { color: colors.primary }]}>Forgot password?</Text>
                 </Pressable>
                 <View style={styles.linkLine} />
               </View>
 
               <View style={styles.createAccountRow}>
-                <Text style={styles.createAccountMuted}>Don’t have an account? </Text>
+                <Text style={[styles.createAccountMuted, !isDark && { color: colors.textSecondary }]}>Don’t have an account? </Text>
                 <Pressable onPress={() => navigation.navigate('Register', { role: route.params.role })}>
-                  <Text style={styles.createAccountLink}>Create Account</Text>
+                  <Text style={[styles.createAccountLink, !isDark && { color: colors.primary }]}>Create Account</Text>
                 </Pressable>
               </View>
 
@@ -162,9 +170,13 @@ export function LoginScreen({ navigation, route }: Props) {
                     setUsername(demoCredentials.teacher.username);
                     setPassword(demoCredentials.teacher.password);
                   }}
-                  style={({ pressed }) => [styles.demoButton, pressed ? { opacity: 0.85 } : null]}
+                  style={({ pressed }) => [
+                    styles.demoButton,
+                    !isDark && { backgroundColor: colors.background, borderColor: colors.border },
+                    pressed ? { opacity: 0.85 } : null
+                  ]}
                 >
-                  <Text style={styles.demoButtonText}>Use Demo {roleLabel}</Text>
+                  <Text style={[styles.demoButtonText, !isDark && { color: colors.textPrimary }]}>Use Demo {roleLabel}</Text>
                 </Pressable>
               </View>
             </View>
@@ -178,7 +190,6 @@ export function LoginScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#160629',
   },
   scrollContent: {
     flexGrow: 1,
@@ -186,7 +197,6 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     minHeight: '100%',
-    backgroundColor: '#160629',
   },
   topGlow: {
     position: 'absolute',

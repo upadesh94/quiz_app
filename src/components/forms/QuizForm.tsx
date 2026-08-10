@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
 import { useResponsive } from '../../utils/responsive';
-import { colors, radii, shadows } from '../../utils/theme';
+import { useAppTheme, radii, shadows } from '../../utils/theme';
 import { getSubjectsForClass } from '../../services/utils/Constants';
 
 type QuizFormProps = {
@@ -31,6 +31,7 @@ type QuizSubmitPayload = Parameters<QuizFormProps['onSubmit']>[0];
 
 export function QuizForm({ onSubmit }: QuizFormProps) {
   const { fontSize, spacing } = useResponsive();
+  const { colors, isDark } = useAppTheme();
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -157,21 +158,21 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
 
   return (
     <View>
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }]}>Quick Setup</Text>
-        <Text style={[styles.quickHelp, { fontSize: fontSize.sm, marginBottom: spacing.sm }]}>Choose a template to prefill settings and create faster.</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Quick Setup</Text>
+        <Text style={[styles.quickHelp, { fontSize: fontSize.sm, marginBottom: spacing.sm }, isDark && { color: '#cbd5e1' }]}>Choose a template to prefill settings and create faster.</Text>
         <View style={styles.row}>
-          <Pressable style={[styles.chip, styles.chipInactive]} onPress={() => applyTemplate('quick-test')}>
-            <Text style={styles.chipTextInactive}>Quick Test</Text>
+          <Pressable style={[styles.chip, isDark ? styles.chipInactiveDark : styles.chipInactiveLight]} onPress={() => applyTemplate('quick-test')}>
+            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>Quick Test</Text>
           </Pressable>
-          <Pressable style={[styles.chip, styles.chipInactive]} onPress={() => applyTemplate('exam-mode')}>
-            <Text style={styles.chipTextInactive}>Exam Mode</Text>
+          <Pressable style={[styles.chip, isDark ? styles.chipInactiveDark : styles.chipInactiveLight]} onPress={() => applyTemplate('exam-mode')}>
+            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>Exam Mode</Text>
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }]}>Basic Details</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Basic Details</Text>
         <CustomInput value={title} onChangeText={setTitle} placeholder="e.g. Algebra Unit Test" label="Quiz Title" />
         <CustomInput value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" label="Subject" />
         <View style={[styles.row, { marginBottom: spacing.md }]}>
@@ -179,9 +180,18 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
             <Pressable
               key={preset}
               onPress={() => setSubject(preset)}
-              style={[styles.chip, subject === preset ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                subject === preset
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={subject === preset ? styles.chipTextActive : styles.chipTextInactive}>{preset}</Text>
+              <Text style={
+                subject === preset
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>{preset}</Text>
             </Pressable>
           ))}
         </View>
@@ -193,22 +203,31 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         />
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }]}>Class and Duration</Text>
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }]}>Class Level</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Class and Duration</Text>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Class Level</Text>
         <View style={[styles.row, { marginBottom: spacing.md }]}> 
           {['8', '9', '10'].map((value) => (
             <Pressable
               key={value}
               onPress={() => toggleChip(value, handleClassLevelChange)}
-              style={[styles.chip, classLevel === value ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                classLevel === value
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={classLevel === value ? styles.chipTextActive : styles.chipTextInactive}>Class {value}</Text>
+              <Text style={
+                classLevel === value
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>Class {value}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }]}>Time Limit</Text>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Time Limit</Text>
         <View style={styles.row}>
           {[10, 20, 30, 45, 60].map((minutes) => (
             <Pressable
@@ -216,10 +235,16 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
               onPress={() => setTimeLimitMinutes(String(minutes))}
               style={[
                 styles.chip,
-                timeLimitMinutes === String(minutes) ? styles.chipActive : styles.chipInactive,
+                timeLimitMinutes === String(minutes)
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
               ]}
             >
-              <Text style={timeLimitMinutes === String(minutes) ? styles.chipTextActive : styles.chipTextInactive}>
+              <Text style={
+                timeLimitMinutes === String(minutes)
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>
                 {minutes}m
               </Text>
             </Pressable>
@@ -234,17 +259,26 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         />
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }]}>Difficulty and Scoring</Text>
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }]}>Difficulty</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Difficulty and Scoring</Text>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Difficulty</Text>
         <View style={[styles.row, { marginBottom: spacing.md }]}> 
           {['easy', 'medium', 'hard'].map((value) => (
             <Pressable
               key={value}
               onPress={() => setDifficulty(value as 'easy' | 'medium' | 'hard')}
-              style={[styles.chip, difficulty === value ? styles.chipActive : styles.chipInactive]}
+              style={[
+                styles.chip,
+                difficulty === value
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
             >
-              <Text style={difficulty === value ? styles.chipTextActive : styles.chipTextInactive}>
+              <Text style={
+                difficulty === value
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>
                 {value.charAt(0).toUpperCase() + value.slice(1)}
               </Text>
             </Pressable>
@@ -271,14 +305,19 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         </View>
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }]}>Advanced Options</Text>
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }]}>Instructions for Students</Text>
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Advanced Options</Text>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Instructions for Students</Text>
         <TextInput
           value={instructions}
           onChangeText={setInstructions}
           placeholder="Add quiz rules, allowed tools, or attempt guidance"
-          style={styles.multilineInput}
+          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+          style={[styles.multilineInput, {
+            backgroundColor: isDark ? 'rgba(15, 10, 44, 0.5)' : '#ffffff',
+            borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#93c5fd',
+            color: isDark ? '#FFFFFF' : '#0f172a'
+          }]}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -292,7 +331,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         />
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Shuffle question order</Text>
+          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Shuffle question order</Text>
           <Pressable
             onPress={() => setShuffleQuestions((prev) => !prev)}
             style={[styles.toggleButton, shuffleQuestions ? styles.toggleOn : styles.toggleOff]}
@@ -302,7 +341,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Allow answer review</Text>
+          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Allow answer review</Text>
           <Pressable
             onPress={() => setAllowReview((prev) => !prev)}
             style={[styles.toggleButton, allowReview ? styles.toggleOn : styles.toggleOff]}
@@ -312,7 +351,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Publish immediately</Text>
+          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Publish immediately</Text>
           <Pressable
             onPress={() => setPublishNow((prev) => !prev)}
             style={[styles.toggleButton, publishNow ? styles.toggleOn : styles.toggleOff]}
@@ -322,7 +361,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Limit to today only</Text>
+          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Limit to today only</Text>
           <Pressable
             onPress={() => setLimitToToday((prev) => !prev)}
             style={[styles.toggleButton, limitToToday ? styles.toggleOn : styles.toggleOff]}
@@ -352,7 +391,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
 
 const styles = StyleSheet.create({
   sectionCard: {
-    backgroundColor: colors.card,
+    backgroundColor: '#ffffff',
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: '#dbeafe',
@@ -361,15 +400,15 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   sectionTitle: {
-    color: colors.textPrimary,
+    color: '#0f172a',
     fontWeight: '700',
     marginBottom: 10,
   },
   quickHelp: {
-    color: colors.textSecondary,
+    color: '#64748b',
   },
   fieldLabel: {
-    color: colors.primary,
+    color: '#3b82f6',
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -391,21 +430,39 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
   },
-  chipActive: {
+  chipActiveLight: {
     backgroundColor: '#1d4ed8',
     borderColor: '#1d4ed8',
   },
-  chipInactive: {
+  chipInactiveLight: {
     backgroundColor: '#f8fafc',
     borderColor: '#cbd5e1',
   },
-  chipTextActive: {
+  chipTextActiveLight: {
     color: '#ffffff',
     fontWeight: '700',
     fontSize: 12,
   },
-  chipTextInactive: {
+  chipTextInactiveLight: {
     color: '#334155',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  chipActiveDark: {
+    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+    borderColor: '#a855f7',
+  },
+  chipInactiveDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.5)',
+    borderColor: 'rgba(168, 85, 247, 0.3)',
+  },
+  chipTextActiveDark: {
+    color: '#f3e8ff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  chipTextInactiveDark: {
+    color: '#c4b5fd',
     fontWeight: '600',
     fontSize: 12,
   },
@@ -427,7 +484,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   switchText: {
-    color: colors.textPrimary,
+    color: '#0f172a',
     fontWeight: '600',
     fontSize: 13,
   },
@@ -453,7 +510,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   errorText: {
-    color: colors.error,
+    color: '#ef4444',
     fontWeight: '600',
     marginBottom: 10,
     fontSize: 13,
