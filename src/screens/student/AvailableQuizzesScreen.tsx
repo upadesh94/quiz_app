@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, FlatList, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View, FlatList, ScrollView, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CustomButton } from '../../components/common/CustomButton';
 import { CustomCard } from '../../components/common/CustomCard';
@@ -9,6 +9,7 @@ import { QuizService } from '../../services/quiz/QuizService';
 import { useResponsive, getGridColumns } from '../../utils/responsive';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { getCollection, where } from '../../firebase/firestore';
+import { CLASS_LEVELS, getSubjectsForClass } from '../../services/utils/Constants';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AvailableQuizzes'>;
 
@@ -17,7 +18,25 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
   const user = useAppSelector((state) => state.auth.user);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [attemptedQuizIds, setAttemptedQuizIds] = useState<Set<string>>(new Set());
+  const [selectedClassLevel, setSelectedClassLevel] = useState<8 | 9 | 10>(user?.classLevel ?? 8);
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const numColumns = getGridColumns(screenWidth, isTablet);
+
+  const subjectOptions = useMemo(() => getSubjectsForClass(selectedClassLevel), [selectedClassLevel]);
+
+  const filteredQuizzes = useMemo(() => {
+    return quizzes.filter((quiz) => {
+      if (quiz.classLevel !== selectedClassLevel) {
+        return false;
+      }
+
+      if (selectedSubject !== 'all' && quiz.subject !== selectedSubject) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [quizzes, selectedClassLevel, selectedSubject]);
 
   useEffect(() => {
     const loadQuizzes = async () => {
@@ -33,6 +52,14 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
 
     loadQuizzes();
   }, [user?.id]);
+
+  useEffect(() => {
+    const hasSelectedSubject = selectedSubject === 'all' || subjectOptions.some((subject) => subject === selectedSubject);
+
+    if (!hasSelectedSubject) {
+      setSelectedSubject('all');
+    }
+  }, [selectedClassLevel, subjectOptions, selectedSubject]);
 
   const renderQuizCard = ({ item: quiz }: { item: Quiz }) => {
     let buttonTitle = 'Start Quiz';
@@ -88,23 +115,69 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
-      <Text
-        style={{
-          fontSize: fontSize['2xl'],
-          fontWeight: '700',
-          marginBottom: spacing.lg,
-        }}
-      >
-        📚 Available Quizzes
-      </Text>
-      {quizzes.length === 0 ? (
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingHorizontal: containerPadding, paddingBottom: 24 }}>
+      <View style={styles.headerCard}>
+        <Text
+          style={{
+            fontSize: fontSize['2xl'],
+            fontWeight: '800',
+            marginBottom: spacing.xs,
+            color: '#0f172a',
+          }}
+        >
+          📚 Subject Quizzes
+        </Text>
+        <Text style={{ fontSize: fontSize.base, color: '#475569', lineHeight: fontSize.base * 1.5 }}>
+          Choose your class and subject to see only the quizzes that match the school syllabus.
+        </Text>
+      </View>
+
+      <View style={styles.filterCard}>
+        <Text style={[styles.filterLabel, { fontSize: fontSize.sm }]}>Class Level</Text>
+        <View style={styles.chipRow}>
+          {CLASS_LEVELS.map((classLevel) => (
+            <Pressable
+              key={classLevel}
+              onPress={() => {
+                setSelectedClassLevel(classLevel);
+                setSelectedSubject('all');
+              }}
+              style={[styles.chip, selectedClassLevel === classLevel ? styles.chipActive : styles.chipInactive]}
+            >
+              <Text style={selectedClassLevel === classLevel ? styles.chipTextActive : styles.chipTextInactive}>
+                Class {classLevel}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md }]}>Subject</Text>
+        <View style={styles.chipRow}>
+          <Pressable
+            onPress={() => setSelectedSubject('all')}
+            style={[styles.chip, selectedSubject === 'all' ? styles.chipActive : styles.chipInactive]}
+          >
+            <Text style={selectedSubject === 'all' ? styles.chipTextActive : styles.chipTextInactive}>All Subjects</Text>
+          </Pressable>
+          {subjectOptions.map((subject) => (
+            <Pressable
+              key={subject}
+              onPress={() => setSelectedSubject(subject)}
+              style={[styles.chip, selectedSubject === subject ? styles.chipActive : styles.chipInactive]}
+            >
+              <Text style={selectedSubject === subject ? styles.chipTextActive : styles.chipTextInactive}>{subject}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {filteredQuizzes.length === 0 ? (
         <Text style={{ fontSize: fontSize.base, color: '#666', marginTop: spacing.xl }}>
-          No quizzes available yet.
+          No quizzes available for Class {selectedClassLevel}{selectedSubject !== 'all' ? ` / ${selectedSubject}` : ''}.
         </Text>
       ) : (
         <FlatList
-          data={quizzes}
+          data={filteredQuizzes}
           renderItem={renderQuizCard}
           keyExtractor={(item) => item.id}
           numColumns={numColumns}
@@ -112,7 +185,7 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
           columnWrapperStyle={numColumns > 1 ? { gap: spacing.sm } : undefined}
         />
       )}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -121,5 +194,55 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     backgroundColor: '#f9fafb',
+  },
+  headerCard: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  filterCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  filterLabel: {
+    color: '#0f172a',
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  chipActive: {
+    backgroundColor: '#1d4ed8',
+    borderColor: '#1d4ed8',
+  },
+  chipInactive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#bfdbfe',
+  },
+  chipTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  chipTextInactive: {
+    color: '#1d4ed8',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

@@ -1,10 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { BrandLogo } from '../../components/common/BrandLogo';
 import { APP_NAME } from '../../services/utils/Constants';
 
 export function SplashScreen() {
   return (
     <View style={styles.container}>
+      <BrandLogo size={180} />
       <Text style={styles.title}>{APP_NAME}</Text>
       <ActivityIndicator size="large" />
     </View>

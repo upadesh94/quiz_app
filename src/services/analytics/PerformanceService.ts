@@ -5,6 +5,7 @@ import {
   PieSlice,
   StudentLeaderboardEntry,
   StudentPerformanceAnalytics,
+  StudentAnalyticsFilters,
   SubjectHeatmapPoint,
   SubjectAnalytics,
   TeacherAdvancedAnalytics,
@@ -49,6 +50,20 @@ function toTrendPoints(attempts: AttemptDoc[]): TrendPoint[] {
       label: `A${index + 1}`,
       percentage: Number(attempt.percentage) || 0,
     }));
+}
+
+function applyStudentFilters(attempts: AttemptDoc[], filters: StudentAnalyticsFilters): AttemptDoc[] {
+  return attempts.filter((attempt) => {
+    if (filters.classLevel && attempt.classLevel !== filters.classLevel) {
+      return false;
+    }
+
+    if (filters.subject && attempt.subject !== filters.subject) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function toPassFailPie(attempts: AttemptDoc[]): PieSlice[] {
@@ -219,14 +234,18 @@ function applyTeacherFilters(attempts: AttemptDoc[], filters: TeacherAnalyticsFi
 }
 
 export class PerformanceService {
-  static async getStudentPerformance(studentId: string): Promise<StudentPerformanceAnalytics> {
+  static async getStudentPerformance(
+    studentId: string,
+    filters: StudentAnalyticsFilters = {},
+  ): Promise<StudentPerformanceAnalytics> {
     const attempts = await getCollection<AttemptDoc>('attempts', [where('studentId', '==', studentId)]);
-    const attemptsCount = attempts.length;
-    const totalPercentage = attempts.reduce((total, item) => total + (Number(item.percentage) || 0), 0);
-    const passCount = attempts.filter((item) => item.passed).length;
+    const filtered = applyStudentFilters(attempts, filters);
+    const attemptsCount = filtered.length;
+    const totalPercentage = filtered.reduce((total, item) => total + (Number(item.percentage) || 0), 0);
+    const passCount = filtered.filter((item) => item.passed).length;
 
-    const subjectAnalytics = toSubjectAnalytics(attempts);
-    const trend = toTrendPoints(attempts);
+    const subjectAnalytics = toSubjectAnalytics(filtered);
+    const trend = toTrendPoints(filtered);
     const strongestSubject = subjectAnalytics[0]?.subject;
     const weakestSubject = subjectAnalytics[subjectAnalytics.length - 1]?.subject;
     const improvementDelta =
@@ -307,7 +326,7 @@ export class PerformanceService {
       passFailPie: toPassFailPie(filtered),
       classPerformance: toClassPerformance(filtered),
       studentOptions: Object.values(studentMap),
-      subjectOptions: Array.from(new Set(allAttempts.map((item) => item.subject).filter(Boolean))).sort(),
+      subjectOptions: Array.from(new Set(filtered.map((item) => item.subject).filter(Boolean))).sort(),
       weakestSubject: subjectAnalytics[subjectAnalytics.length - 1]?.subject,
       strongestSubject: subjectAnalytics[0]?.subject,
       weakStudentsCount: weakStudents.length,

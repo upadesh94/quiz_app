@@ -4,13 +4,14 @@ import { TrendPoint } from '../../types/models';
 
 type Props = {
   data: TrendPoint[];
+  isDark?: boolean;
 };
 
-export function PerformanceLineChart({ data }: Props) {
+export function PerformanceLineChart({ data, isDark = false }: Props) {
   if (data.length === 0) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyStateText}>No attempts yet. Complete quizzes to see your trend.</Text>
+      <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+        <Text style={[styles.emptyStateText, isDark && styles.textDark]}>No attempts yet. Complete quizzes to see your trend.</Text>
       </View>
     );
   }
@@ -18,26 +19,27 @@ export function PerformanceLineChart({ data }: Props) {
   const highest = Math.max(...data.map((item) => item.percentage), 1);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Recent Performance Trend</Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <Text style={[styles.title, isDark && styles.titleDark]}>Recent Performance Trend</Text>
       <View style={styles.chartRow}>
         {data.map((point) => {
           const heightPercentage = Math.max((point.percentage / highest) * 100, 6);
 
           return (
             <View key={point.label} style={styles.column}>
-              <Text style={styles.valueLabel}>{point.percentage}%</Text>
-              <View style={styles.columnTrack}>
+              <Text style={[styles.valueLabel, isDark && styles.textDark]}>{point.percentage}%</Text>
+              <View style={[styles.columnTrack, isDark && styles.columnTrackDark]}>
                 <View
                   style={[
                     styles.columnFill,
+                    isDark && styles.columnFillDark,
                     {
                       height: `${heightPercentage}%`,
                     },
                   ]}
                 />
               </View>
-              <Text style={styles.xLabel}>{point.label}</Text>
+              <Text style={[styles.xLabel, isDark && styles.textDark]}>{point.label}</Text>
             </View>
           );
         })}
@@ -99,5 +101,27 @@ const styles = StyleSheet.create({
   emptyStateText: {
     color: '#475569',
     fontSize: 14,
+  },
+  containerDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
+  },
+  titleDark: {
+    color: '#FFFFFF',
+  },
+  textDark: {
+    color: '#cbd5e1',
+  },
+  columnTrackDark: {
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+  },
+  columnFillDark: {
+    backgroundColor: '#8b5cf6',
+  },
+  emptyStateDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
   },
 });

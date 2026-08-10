@@ -16,8 +16,8 @@ export class QuizService {
     return [
       {
         id: 'quiz-1',
-        title: 'Algebra Basics',
-        subject: 'Math',
+        title: 'Mathematics Basics',
+        subject: 'Mathematics',
         classLevel: 8,
         totalQuestions: 10,
         timeLimitMinutes: 10,

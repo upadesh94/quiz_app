@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { SplashScreen } from '../screens/common/SplashScreen';
+import { LandingScreen } from '../screens/common/LandingScreen';
 import { RoleSelectionScreen } from '../screens/auth/RoleSelectionScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
@@ -13,10 +14,15 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator initialRouteName="RoleSelection">
+    <Stack.Navigator initialRouteName="Landing">
       <Stack.Screen
         name="Splash"
         component={SplashScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Landing"
+        component={LandingScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

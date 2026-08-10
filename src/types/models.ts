@@ -139,6 +139,11 @@ export interface StudentPerformanceAnalytics {
   improvementDelta: number;
 }
 
+export interface StudentAnalyticsFilters {
+  classLevel?: 8 | 9 | 10;
+  subject?: string;
+}
+
 export interface TeacherClassAnalytics {
   teacherId: string;
   totalAttempts: number;

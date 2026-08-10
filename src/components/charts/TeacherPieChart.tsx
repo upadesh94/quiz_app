@@ -6,9 +6,10 @@ import { PieSlice } from '../../types/models';
 type Props = {
   title: string;
   data: PieSlice[];
+  isDark?: boolean;
 };
 
-export function TeacherPieChart({ title, data }: Props) {
+export function TeacherPieChart({ title, data, isDark = false }: Props) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const size = 150;
   const strokeWidth = 24;
@@ -17,9 +18,9 @@ export function TeacherPieChart({ title, data }: Props) {
 
   if (total === 0) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>{title}</Text>
-        <Text style={styles.emptyText}>No data available for this filter.</Text>
+      <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+        <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>{title}</Text>
+        <Text style={[styles.emptyText, isDark && styles.textDark]}>No data available for this filter.</Text>
       </View>
     );
   }
@@ -27,8 +28,8 @@ export function TeacherPieChart({ title, data }: Props) {
   let cumulativePercent = 0;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
       <View style={styles.chartWrap}>
         <Svg width={size} height={size}>
           {data.map((slice, index) => {
@@ -57,8 +58,8 @@ export function TeacherPieChart({ title, data }: Props) {
           })}
         </Svg>
         <View style={styles.centerLabel}>
-          <Text style={styles.centerValue}>{total}</Text>
-          <Text style={styles.centerText}>Total</Text>
+          <Text style={[styles.centerValue, isDark && styles.valueDark]}>{total}</Text>
+          <Text style={[styles.centerText, isDark && styles.textDark]}>Total</Text>
         </View>
       </View>
 
@@ -66,8 +67,8 @@ export function TeacherPieChart({ title, data }: Props) {
         {data.map((slice) => (
           <View key={slice.label} style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: slice.color }]} />
-            <Text style={styles.legendLabel}>{slice.label}</Text>
-            <Text style={styles.legendValue}>{slice.value}</Text>
+            <Text style={[styles.legendLabel, isDark && styles.textDark]}>{slice.label}</Text>
+            <Text style={[styles.legendValue, isDark && styles.valueDark]}>{slice.value}</Text>
           </View>
         ))}
       </View>
@@ -149,5 +150,24 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#475569',
     fontSize: 13,
+  },
+  containerDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
+  },
+  titleDark: {
+    color: '#FFFFFF',
+  },
+  textDark: {
+    color: '#cbd5e1',
+  },
+  valueDark: {
+    color: '#f8fafc',
+  },
+  emptyStateDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
   },
 });

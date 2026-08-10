@@ -6,14 +6,15 @@ type Props = {
   title: string;
   data: ClassBarPoint[];
   suffix?: string;
+  isDark?: boolean;
 };
 
-export function CategoryBarChart({ title, data, suffix = '%' }: Props) {
+export function CategoryBarChart({ title, data, suffix = '%', isDark = false }: Props) {
   if (data.length === 0) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>{title}</Text>
-        <Text style={styles.emptyText}>No data available for this filter.</Text>
+      <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+        <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>{title}</Text>
+        <Text style={[styles.emptyText, isDark && styles.textDark]}>No data available for this filter.</Text>
       </View>
     );
   }
@@ -21,23 +22,24 @@ export function CategoryBarChart({ title, data, suffix = '%' }: Props) {
   const maxValue = Math.max(...data.map((item) => item.value), 1);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
       <View style={styles.list}>
         {data.map((item) => (
           <View key={item.label} style={styles.row}>
-            <Text style={styles.label}>{item.label}</Text>
-            <View style={styles.track}>
+            <Text style={[styles.label, isDark && styles.textDark]}>{item.label}</Text>
+            <View style={[styles.track, isDark && styles.trackDark]}>
               <View
                 style={[
                   styles.fill,
+                  isDark && styles.fillDark,
                   {
                     width: `${Math.max((item.value / maxValue) * 100, 5)}%`,
                   },
                 ]}
               />
             </View>
-            <Text style={styles.value}>{item.value}{suffix}</Text>
+            <Text style={[styles.value, isDark && styles.valueDark]}>{item.value}{suffix}</Text>
           </View>
         ))}
       </View>
@@ -107,5 +109,30 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#475569',
     fontSize: 13,
+  },
+  containerDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
+  },
+  titleDark: {
+    color: '#FFFFFF',
+  },
+  textDark: {
+    color: '#cbd5e1',
+  },
+  valueDark: {
+    color: '#f8fafc',
+  },
+  trackDark: {
+    backgroundColor: 'rgba(22, 163, 74, 0.2)',
+  },
+  fillDark: {
+    backgroundColor: '#4ade80',
+  },
+  emptyStateDark: {
+    backgroundColor: 'rgba(15, 10, 44, 0.88)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    borderWidth: 1,
   },
 });

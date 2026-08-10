@@ -2,6 +2,7 @@ import { UserRole } from '../types/models';
 
 export type RootStackParamList = {
   Splash: undefined;
+  Landing: undefined;
   RoleSelection: undefined;
   Login: { role: UserRole };
   Register: { role: UserRole };

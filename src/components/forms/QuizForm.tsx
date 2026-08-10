@@ -4,6 +4,7 @@ import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
 import { useResponsive } from '../../utils/responsive';
 import { colors, radii, shadows } from '../../utils/theme';
+import { getSubjectsForClass } from '../../services/utils/Constants';
 
 type QuizFormProps = {
   onSubmit: (payload: {
@@ -21,6 +22,8 @@ type QuizFormProps = {
     tags?: string[];
     status?: 'draft' | 'published';
     isPublished?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
   }) => void;
 };
 
@@ -43,7 +46,8 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
   const [publishNow, setPublishNow] = useState(true);
   const [limitToToday, setLimitToToday] = useState(false);
   const [error, setError] = useState('');
-  const subjectPresets = ['Mathematics', 'Science', 'English', 'Social Science'];
+  const selectedClassLevel = [8, 9, 10].includes(Number(classLevel)) ? (Number(classLevel) as 8 | 9 | 10) : 10;
+  const subjectPresets = getSubjectsForClass(selectedClassLevel);
 
   const applyTemplate = (template: 'quick-test' | 'exam-mode') => {
     if (template === 'quick-test') {
@@ -122,8 +126,8 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         .filter(Boolean),
       status: shouldPublish ? 'published' : 'draft',
       isPublished: shouldPublish,
-      availableFrom: limitToToday ? new Date(new Date().setHours(0,0,0,0)).toISOString() : undefined,
-      availableUntil: limitToToday ? new Date(new Date().setHours(23,59,59,999)).toISOString() : undefined,
+      availableFrom: limitToToday ? new Date(new Date().setHours(0, 0, 0, 0)).toISOString() : undefined,
+      availableUntil: limitToToday ? new Date(new Date().setHours(23, 59, 59, 999)).toISOString() : undefined,
     };
   };
 
@@ -140,6 +144,16 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
   };
 
   const canCreateQuiz = title.trim().length > 0 && subject.trim().length > 0;
+
+  const handleClassLevelChange = (value: string) => {
+    setClassLevel(value);
+    const nextClassLevel = Number(value) as 8 | 9 | 10;
+    const subjectsForClass = getSubjectsForClass(nextClassLevel);
+
+    if (subject && !subjectsForClass.includes(subject as never)) {
+      setSubject('');
+    }
+  };
 
   return (
     <View>
@@ -186,7 +200,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
           {['8', '9', '10'].map((value) => (
             <Pressable
               key={value}
-              onPress={() => toggleChip(value, setClassLevel)}
+              onPress={() => toggleChip(value, handleClassLevelChange)}
               style={[styles.chip, classLevel === value ? styles.chipActive : styles.chipInactive]}
             >
               <Text style={classLevel === value ? styles.chipTextActive : styles.chipTextInactive}>Class {value}</Text>
