@@ -9,7 +9,6 @@ import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { StudentNavigator } from './StudentNavigator';
 import { TeacherNavigator } from './TeacherNavigator';
-import { ThemeToggle } from '../components/common/ThemeToggle';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -70,7 +69,6 @@ export function AppNavigator() {
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
-      <ThemeToggle />
     </>
   );
 }

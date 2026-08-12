@@ -12,6 +12,7 @@ import { TeacherProfileService } from '../../services/teacher/TeacherProfileServ
 import { StudentService } from '../../services/teacher/StudentService';
 import { PerformanceService } from '../../services/analytics/PerformanceService';
 import { clearAuth } from '../../store/slices/authSlice';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 import { StudentPerformanceAnalytics } from '../../types/models';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme } from '../../utils/theme';
@@ -111,8 +112,9 @@ export function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb', paddingHorizontal: containerPadding }]}>
-      <View
+    <View style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb' }]}>
+      <ScrollView style={{ paddingHorizontal: containerPadding }}>
+        <View
         style={{
           maxWidth: isTablet ? 500 : '100%',
           alignSelf: 'center',
@@ -197,7 +199,9 @@ export function ProfileScreen() {
 
         <CustomButton title="Logout" variant="secondary" onPress={onLogout} />
       </View>
-    </ScrollView>
+      </ScrollView>
+      <ThemeToggle />
+    </View>
   );
 }
 
