@@ -9,6 +9,9 @@ import { firebaseAuth, firestoreDb } from './config';
 
 function usernameToEmail(username: string) {
   const normalized = username.trim().toLowerCase().replace(/\s+/g, '.');
+  if (normalized === 'quizapp_superadminupadesh') {
+    return 'admin@quizmaster.com';
+  }
   return `${normalized}@quizmaster.local`;
 }
 
@@ -23,6 +26,7 @@ export async function registerWithUsername(params: {
   qualification?: string;
   mobileNumber?: string;
   email?: string;
+  isApproved?: boolean;
 }) {
   console.log('[FirebaseAuth] register:start', {
     username: params.username,
@@ -47,6 +51,7 @@ export async function registerWithUsername(params: {
     mobileNumber: params.mobileNumber ?? null,
     initialPassword: params.password,
     isActive: true,
+    isApproved: params.isApproved ?? (params.role === 'teacher' ? false : true),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

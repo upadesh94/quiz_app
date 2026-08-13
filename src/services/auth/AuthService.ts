@@ -68,10 +68,15 @@ export class AuthService {
         admissionNumber: profile?.admissionNumber as User['admissionNumber'],
         dateOfBirth: profile?.dateOfBirth as User['dateOfBirth'],
         gender: profile?.gender as User['gender'],
+        isApproved: profile?.isApproved as User['isApproved'],
       };
 
       if (appUser.role !== role) {
         throw new Error(`Please login from ${appUser.role} section.`);
+      }
+
+      if (appUser.role === 'teacher' && appUser.isApproved === false) {
+        throw new Error('Your teacher account is pending admin approval.');
       }
 
       const token = await firebaseUser.getIdToken();
@@ -254,7 +259,7 @@ export class AuthService {
       username: params.username,
       role: params.role,
       success: true,
-      requiresApproval: false,
+      requiresApproval: params.role === 'teacher',
     };
   }
 }

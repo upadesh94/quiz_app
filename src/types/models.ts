@@ -19,6 +19,7 @@ export interface User {
   admissionNumber?: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
+  isApproved?: boolean;
 }
 
 export interface Quiz {

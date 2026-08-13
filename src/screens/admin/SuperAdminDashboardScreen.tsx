@@ -194,6 +194,7 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         initialPassword: teacherPassword.trim(),
         role: 'teacher' as const,
         isActive: true,
+        isApproved: true,
         lastLogin: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       };
@@ -419,6 +420,22 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
       loadDashboardData();
     } catch (e) {
       console.error('Status error:', e);
+    }
+  };
+
+  const approveTeacher = async (user: any) => {
+    try {
+      if (user.id && !user.id.startsWith('usr-')) {
+        await updateDocument('users', user.id, { isApproved: true, isActive: true });
+      }
+      setAuditLogs((prev) => [
+        { id: String(Date.now()), event: `[TEACHER_APPROVAL] Approved Teacher: ${user.username}`, timestamp: new Date().toISOString(), level: 'success' },
+        ...prev,
+      ]);
+      Alert.alert('Teacher Approved', `Teacher ${user.fullName} is now approved and can log in.`);
+      loadDashboardData();
+    } catch (e) {
+      console.error('Approval error:', e);
     }
   };
 
@@ -777,11 +794,16 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
                   key: 'isActive',
                   title: 'Status',
                   flex: 0.9,
-                  render: (item) => (
-                    <Pressable onPress={() => toggleUserStatus(item)}>
-                      <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
-                    </Pressable>
-                  ),
+                  render: (item) => {
+                    if (item.isApproved === false) {
+                      return <Badge label="PENDING" variant="warning" size="sm" />;
+                    }
+                    return (
+                      <Pressable onPress={() => toggleUserStatus(item)}>
+                        <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
+                      </Pressable>
+                    );
+                  },
                 },
                 {
                   key: 'actions',
@@ -789,6 +811,11 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
                   flex: 1.4,
                   render: (item) => (
                     <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {item.isApproved === false && (
+                        <Pressable onPress={() => approveTeacher(item)} style={[styles.actionBtnEdit, { backgroundColor: '#10b981' }]}>
+                          <Text style={[styles.btnTextText, { color: '#fff' }]}>Approve</Text>
+                        </Pressable>
+                      )}
                       <Pressable onPress={() => startEditingUser(item)} style={styles.actionBtnEdit}>
                         <Text style={styles.btnTextText}>Edit</Text>
                       </Pressable>
