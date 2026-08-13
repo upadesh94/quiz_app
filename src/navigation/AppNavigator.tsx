@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
@@ -13,6 +13,7 @@ import { SuperAdminDashboardScreen } from '../screens/admin/SuperAdminDashboardS
 import { StudentNavigator } from './StudentNavigator';
 import { TeacherNavigator } from './TeacherNavigator';
 import { useAppTheme } from '../utils/theme';
+import { useAppSelector } from '../hooks/useAppSelector';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -33,10 +34,26 @@ function checkIsAdminSecretUrl(): boolean {
 export function AppNavigator() {
   const { colors } = useAppTheme();
   const isAdminSecret = checkIsAdminSecretUrl();
+  const { token, user } = useAppSelector((state) => state.auth);
+  const isAuthenticated = !!token;
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Artificial delay to show splash, in a real app this might wait for fonts or auth rehydration
+    const timer = setTimeout(() => setIsReady(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isReady) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+        <Stack.Screen name="Splash" component={SplashScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Stack.Navigator
-      initialRouteName={isAdminSecret ? 'SuperAdminLogin' : 'Login'}
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.textPrimary,
@@ -44,68 +61,35 @@ export function AppNavigator() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen
-        name="Splash"
-        component={SplashScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Landing"
-        component={LandingScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="RoleSelection"
-        component={RoleSelectionScreen}
-        options={{ title: 'QuizMaster', headerShown: true }}
-      />
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="SuperAdminLogin"
-        component={SuperAdminLoginScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="SuperAdminDashboard"
-        component={SuperAdminDashboardScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{
-          headerShown: true,
-          title: 'Create Account',
-        }}
-      />
-      <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen}
-        options={{
-          headerShown: true,
-          title: 'Reset Password',
-        }}
-      />
-      <Stack.Screen
-        name="StudentDashboard"
-        component={StudentNavigator}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="TeacherDashboard"
-        component={TeacherNavigator}
-        options={{ headerShown: false }}
-      />
+      {!isAuthenticated ? (
+        // Unauthenticated Stack
+        <Stack.Group>
+          {isAdminSecret ? (
+            <Stack.Screen name="SuperAdminLogin" component={SuperAdminLoginScreen} options={{ headerShown: false }} />
+          ) : (
+            <>
+              <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} options={{ title: 'QuizMaster' }} />
+              <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            </>
+          )}
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create Account' }} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset Password' }} />
+        </Stack.Group>
+      ) : (
+        // Authenticated Stack
+        <Stack.Group>
+          {user?.role === 'superadmin' && (
+            <Stack.Screen name="SuperAdminDashboard" component={SuperAdminDashboardScreen} options={{ headerShown: false }} />
+          )}
+          {user?.role === 'teacher' && (
+            <Stack.Screen name="TeacherDashboard" component={TeacherNavigator} options={{ headerShown: false }} />
+          )}
+          {user?.role === 'student' && (
+            <Stack.Screen name="StudentDashboard" component={StudentNavigator} options={{ headerShown: false }} />
+          )}
+        </Stack.Group>
+      )}
     </Stack.Navigator>
   );
 }

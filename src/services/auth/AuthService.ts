@@ -48,50 +48,6 @@ export class AuthService {
   static async login(username: string, password: string, role: UserRole) {
     console.log('[AuthService] login:start', { username, role });
 
-    if (role === 'student' && username === DEMO_STUDENT.username && password === DEMO_STUDENT.password) {
-      console.log('[AuthService] login:demo-success', { username, role: 'student' });
-      return {
-        token: 'demo-student-token',
-        user: {
-          id: 'demo-student-1',
-          username: DEMO_STUDENT.username,
-          fullName: 'Demo Student',
-          role: 'student' as const,
-          classLevel: 9 as const,
-        },
-      };
-    }
-
-    if (role === 'teacher' && username === DEMO_TEACHER.username && password === DEMO_TEACHER.password) {
-      console.log('[AuthService] login:demo-success', { username, role: 'teacher' });
-      return {
-        token: 'demo-teacher-token',
-        user: {
-          id: 'demo-teacher-1',
-          username: DEMO_TEACHER.username,
-          fullName: 'Demo Teacher',
-          role: 'teacher' as const,
-        },
-      };
-    }
-
-    if (role === 'superadmin' || username === 'quizapp_superadminupadesh') {
-      if (password === 'itsme@adminupadesh') {
-        console.log('[AuthService] login:superadmin-success', { username });
-        return {
-          token: 'superadmin-token',
-          user: {
-            id: 'superadmin-1',
-            username: 'quizapp_superadminupadesh',
-            fullName: 'System Super Admin',
-            role: 'superadmin' as const,
-            email: 'admin@quizmaster.com',
-          },
-        };
-      }
-      throw new Error('Invalid Super Admin credentials');
-    }
-
     try {
       const firebaseUser = await signInWithUsername(username, password);
       const profile = await getUserProfile(firebaseUser.uid);

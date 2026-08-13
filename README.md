@@ -102,8 +102,11 @@ Client-side routes are handled with a fallback rewrite to `index.html`.
 
 ## Implemented Features
 
-- Role-based app entry and navigation (student and teacher)
+- Role-based app entry and navigation (student, teacher, and superadmin)
 - Authentication screens (login/register/forgot password/role selection)
+- Advanced Security & RBAC:
+  - Route guards blocking unauthorized navigation
+  - Firestore Security Rules deployed (`firestore.rules`) for granular access control
 - Student flow:
   - Dashboard
   - Available quizzes
@@ -111,11 +114,19 @@ Client-side routes are handled with a fallback rewrite to `index.html`.
   - Quiz result
   - Performance analytics
 - Teacher flow:
+  - Multi-class and multi-subject assignment upon registration
   - Dashboard
   - Create quiz
   - Add questions
   - Manage students
   - Class analytics
+- Super Admin Portal (Developer Enterprise UI):
+  - Advanced System Dashboard with latency and load indicators
+  - Live Logged-in Session Monitoring
+  - Global Quiz & Attempt Management
+  - Master User Editor with privilege escalation controls
+  - Firestore JSON Explorer
+  - Security Audit Log Stream
 - Shared UI components (cards, inputs, buttons, quiz components, charts)
 
 ## Quiz Attempt UX Rules
@@ -145,5 +156,4 @@ Client-side routes are handled with a fallback rewrite to `index.html`.
 
 1. Connect all services to real Firebase Auth and Firestore data.
 2. Add automated tests for services and critical screens.
-3. Harden role-based authorization and security rules.
-4. Improve analytics dashboards with production data and filtering.
+3. Improve analytics dashboards with production data and filtering.

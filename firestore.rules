@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Helper function to check if the user is a superadmin
+    function isSuperAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    // Helper function to check if the user is a teacher
+    function isTeacher() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // Helper function to check if the user is a student
+    function isStudent() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      // Anyone can create their initial account during signup
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can read and update their own document
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // SuperAdmins have full access to all users
+      allow read, write: if isSuperAdmin();
+      
+      // Teachers can read student profiles
+      allow read: if isTeacher();
+    }
+
+    // QUIZZES COLLECTION
+    match /quizzes/{quizId} {
+      // SuperAdmins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Teachers can create, read, and update quizzes
+      allow create, read, update: if isTeacher();
+      
+      // Students can only read published quizzes
+      allow read: if isStudent() && resource.data.isPublished == true;
+    }
+
+    // ATTEMPTS COLLECTION
+    match /attempts/{attemptId} {
+      // SuperAdmins have full access
+      allow read, write: if isSuperAdmin();
+      
+      // Teachers can read all attempts
+      allow read: if isTeacher();
+      
+      // Students can read and create their own attempts
+      allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
+      allow read: if isStudent() && resource.data.studentId == request.auth.uid;
+    }
+  }
+}

@@ -8,13 +8,17 @@ This file defines the technical architecture consistent with `README.md`, `FUNCT
 
 ### USERS TABLE
 
-| Field    | Type    | Description     |
-| -------- | ------- | --------------- |
-| id       | UUID    | Primary key     |
-| username | VARCHAR | Unique          |
-| password | VARCHAR | Hashed          |
-| role     | VARCHAR | student/teacher/admin |
-| class    | VARCHAR | Student class   |
+| Field            | Type     | Description                                 |
+| ---------------- | -------- | ------------------------------------------- |
+| id               | String   | UID from Firebase Auth                      |
+| username         | String   | Unique username                             |
+| fullName         | String   | Display Name                                |
+| role             | String   | student / teacher / superadmin              |
+| isActive         | Boolean  | Account status                              |
+| classLevel       | Number   | (Students) Target class level (8, 9, 10)    |
+| assignedClasses  | Number[] | (Teachers) Array of classes they teach      |
+| teachingSubjects | String[] | (Teachers) Array of subjects they teach     |
+| qualification    | String   | (Teachers) Academic credentials             |
 
 ---
 
@@ -147,10 +151,13 @@ Each module:
 
 ## 🔐 Security Architecture
 
-* JWT Authentication
-* Role-based access
-* Input validation
-* Database access rules/policies
+* **Authentication**: Firebase Authentication (Email/Password) & JWT Tokens
+* **Route Guards**: Client-side React Navigation stack protection based on active Redux `user.token` and `user.role`.
+* **Database Access**: Server-enforced `firestore.rules`.
+  * **SuperAdmin**: Root access to all collections.
+  * **Teacher**: Read/Write on Quizzes and Attempts for their assigned classes.
+  * **Student**: Read-only on published Quizzes; Write access limited to their own Attempts.
+* **Input Validation**: Handled at React Native component level before payload transmission.
 
 ---
 

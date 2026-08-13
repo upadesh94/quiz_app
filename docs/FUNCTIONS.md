@@ -39,13 +39,16 @@ This file is aligned with `README.md`, `ARCHITECTURE.md`, `sql_shema.txt`, and `
 
 ---
 
-## 🛡️ Admin Flow
+## 🛡️ Admin Flow (Super Admin)
 
-### Manage Platform
+### System Management & Auditing
 
-* View users and role distribution
-* Disable abusive accounts
-* Monitor system-level reports
+* **Access Control**: Authentic login via Firebase Auth (no hardcoded credentials).
+* **Live Session Monitoring**: View all active `ONLINE` or `OFFLINE` user sessions.
+* **Master User Record Editor**: Modify user privileges (role escalation/de-escalation), change passwords, reassign classes, and toggle active status.
+* **Global Content Management**: Publish, unpublish, or delete Quizzes and view system-wide attempts.
+* **Data Inspection**: Firestore JSON Explorer to inspect raw document schema.
+* **Security Auditing**: Real-Time Security Audit Stream monitoring all sensitive overrides and creation events.
 
 ---
 
@@ -131,9 +134,12 @@ Client → API → DB → Response → UI
 
 ## 🔒 Security Flow
 
-* Token validation
-* Role verification
-* Query restrictions
+* **Token Validation**: Firebase JWT authentication on all requests.
+* **Route Protection**: React Navigation stack strictly isolated by `role` state in Redux. Attempting to bypass forces a redirect to the Login screen.
+* **Database Role-Based Access Control (RBAC)**: `firestore.rules` enforces authorization checks natively on the Google infrastructure.
+  * *SuperAdmin*: Unrestricted read/write.
+  * *Teacher*: Scoped read/write based on assigned classes.
+  * *Student*: Scoped to own attempts and read-only published quizzes.
 
 ---
 
