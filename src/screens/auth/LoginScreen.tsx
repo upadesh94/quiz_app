@@ -234,33 +234,6 @@ export function LoginScreen({ navigation, route }: Props) {
                 </Pressable>
               </View>
 
-              {/* Demo Account Quick Buttons */}
-              <View style={styles.demoSection}>
-                <Text style={[styles.demoSectionLabel, { color: isDark ? '#64748b' : '#94a3b8' }]}>
-                  ⚡ QUICK DEMO ACCESS
-                </Text>
-                <View style={styles.demoRow}>
-                  <Pressable
-                    onPress={() => handleDemoFill('student')}
-                    style={[
-                      styles.demoPill,
-                      { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#e0e7ff', borderColor: '#6366f1' },
-                    ]}
-                  >
-                    <Text style={[styles.demoPillText, { color: '#6366f1' }]}>🎓 Demo Student</Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => handleDemoFill('teacher')}
-                    style={[
-                      styles.demoPill,
-                      { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff', borderColor: '#a855f7' },
-                    ]}
-                  >
-                    <Text style={[styles.demoPillText, { color: '#a855f7' }]}>👩‍🏫 Demo Teacher</Text>
-                  </Pressable>
-                </View>
-              </View>
 
             </View>
           </View>
