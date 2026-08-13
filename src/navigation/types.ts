@@ -4,7 +4,7 @@ export type RootStackParamList = {
   Splash: undefined;
   Landing: undefined;
   RoleSelection: undefined;
-  Login: { role: UserRole };
+  Login: { role?: UserRole } | undefined;
   Register: { role: UserRole };
   ForgotPassword: undefined;
   StudentDashboard: undefined;
@@ -17,5 +17,7 @@ export type RootStackParamList = {
   AddQuestions: { quizId: string };
   ManageStudents: undefined;
   ClassAnalytics: undefined;
+  SuperAdminLogin: { secret?: string } | undefined;
+  SuperAdminDashboard: undefined;
   Profile: undefined;
 };

@@ -30,13 +30,15 @@ export function QuestionCard({ question, options, selectedOption, onSelect }: Qu
         <Text style={{ color: colors.primary, fontWeight: '700', fontSize: fontSize.sm }}>Question</Text>
       </View>
       <Text
+        selectable={false}
         style={{
           fontWeight: '700',
           marginBottom: spacing.lg,
           fontSize: fontSize.lg,
           color: colors.textPrimary,
           lineHeight: fontSize.lg * 1.4,
-        }}
+          userSelect: 'none',
+        } as any}
       >
         {question}
       </Text>

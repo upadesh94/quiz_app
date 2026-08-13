@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useResponsive } from '../../utils/responsive';
+import { useAppTheme } from '../../utils/theme';
+import { LoadingState } from '../../components/common/LoadingState';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Badge } from '../../components/common/Badge';
 
 interface Notification {
   id: string;
@@ -10,6 +14,7 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   timestamp: string;
   read: boolean;
+  actionUrl?: string;
 }
 
 interface NotificationsScreenProps {
@@ -18,85 +23,99 @@ interface NotificationsScreenProps {
 
 export function NotificationsScreen({ badgeCount = 0 }: NotificationsScreenProps) {
   const { fontSize, spacing, containerPadding } = useResponsive();
+  const { colors } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'Welcome!',
-      message: 'You have successfully logged in to QuizMaster.',
-      type: 'success',
-      timestamp: new Date().toISOString(),
-      read: false,
-    },
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role === 'teacher') {
-      setNotifications((prev) => [
-        {
-          id: '2',
-          title: 'Pending Student Request',
-          message: 'You have 1 student registration request waiting for approval.',
-          type: 'info',
-          timestamp: new Date().toISOString(),
-          read: false,
-        },
-        ...prev,
-      ]);
-    }
-  }, [user?.role]);
+    const loadNotifications = async () => {
+      try {
+        setIsLoading(true);
+        const newNotifications: Notification[] = [];
+        
+        // Base login success notification
+        newNotifications.push({
+          id: 'login-success',
+          title: 'Welcome!',
+          message: 'You have successfully logged in to QuizMaster.',
+          type: 'success',
+          timestamp: new Date().toISOString(), // In a real app this would be login time
+          read: true,
+        });
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return '#16a34a';
-      case 'error':
-        return '#dc2626';
-      case 'warning':
-        return '#ea580c';
-      default:
-        return '#2563eb';
-    }
-  };
+        if (user?.role === 'teacher') {
+          newNotifications.unshift({
+            id: 'teacher-req',
+            title: 'Pending Student Request',
+            message: 'You have 1 student registration request waiting for approval.',
+            type: 'info',
+            timestamp: new Date().toISOString(),
+            read: false,
+          });
+        }
 
-  const getTypeEmoji = (type: string) => {
-    switch (type) {
-      case 'success':
-        return '✅';
-      case 'error':
-        return '❌';
-      case 'warning':
-        return '⚠️';
-      default:
-        return 'ℹ️';
-    }
-  };
+        if (user?.role === 'student' && user?.classLevel) {
+          // Fetch quizzes to dynamically generate notifications for newly available quizzes
+          const { QuizService } = await import('../../services/quiz/QuizService');
+          const availableQuizzes = await QuizService.getAvailableQuizzes();
+          
+          // Filter for the student's class
+          const myClassQuizzes = availableQuizzes.filter(q => q.classLevel === user.classLevel);
+          
+          myClassQuizzes.forEach(quiz => {
+             // Only notify if it's available now (not expired or future)
+             const now = new Date().getTime();
+             const isFuture = quiz.availableFrom && now < new Date(quiz.availableFrom).getTime();
+             const isExpired = quiz.availableUntil && now > new Date(quiz.availableUntil).getTime();
+             
+             if (!isFuture && !isExpired) {
+               newNotifications.unshift({
+                 id: `quiz-${quiz.id}`,
+                 title: 'New Quiz Arrived! 🚀',
+                 message: `A new ${quiz.subject} quiz "${quiz.title}" is available for Class ${user.classLevel}.`,
+                 type: 'info',
+                 timestamp: quiz.createdAt || new Date().toISOString(),
+                 read: false,
+               });
+             }
+          });
+        }
+        
+        // Sort notifications by timestamp descending
+        newNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setNotifications(newNotifications);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadNotifications();
+  }, [user]);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={{ paddingHorizontal: containerPadding, paddingVertical: spacing.lg }}>
         <Text
           style={{
             fontSize: fontSize['2xl'],
             fontWeight: '700',
             marginBottom: spacing.lg,
-            color: '#0f172a',
+            color: colors.textPrimary,
           }}
         >
           🔔 Notifications
         </Text>
 
         {isLoading ? (
-          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl }}>
-            <ActivityIndicator size="small" color="#2563eb" />
-          </View>
+          <LoadingState type="spinner" message="Loading notifications..." />
         ) : notifications.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyTitle}>No Notifications</Text>
-            <Text style={styles.emptyMessage}>You&apos;re all caught up!</Text>
-          </View>
+          <EmptyState
+            title="No Notifications"
+            description="You're all caught up! Check back later for updates."
+          />
         ) : (
           <View style={{ gap: spacing.md }}>
             {notifications.map((notification) => (
@@ -105,21 +124,30 @@ export function NotificationsScreen({ badgeCount = 0 }: NotificationsScreenProps
                 style={[
                   styles.notificationCard,
                   {
-                    borderLeftColor: getTypeColor(notification.type),
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    borderLeftColor:
+                      notification.type === 'success'
+                        ? colors.success
+                        : notification.type === 'error'
+                        ? colors.error
+                        : notification.type === 'warning'
+                        ? colors.warning
+                        : colors.info,
                     opacity: notification.read ? 0.6 : 1,
                   },
                 ]}
               >
-                <View style={{ flexDirection: 'row', gap: spacing.sm, flex: 1 }}>
-                  <Text style={{ fontSize: 20 }}>{getTypeEmoji(notification.type)}</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, flex: 1, alignItems: 'flex-start' }}>
+                  <Badge label={notification.type} variant={notification.type} size="sm" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: fontSize.base, fontWeight: '700', color: '#0f172a', marginBottom: spacing.xs }}>
+                    <Text style={{ fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs }}>
                       {notification.title}
                     </Text>
-                    <Text style={{ fontSize: fontSize.sm, color: '#334155', lineHeight: fontSize.sm * 1.4 }}>
+                    <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: fontSize.sm * 1.4 }}>
                       {notification.message}
                     </Text>
-                    <Text style={{ fontSize: fontSize.xs, color: '#94a3b8', marginTop: spacing.xs }}>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs }}>
                       {new Date(notification.timestamp).toLocaleString()}
                     </Text>
                   </View>
@@ -136,33 +164,11 @@ export function NotificationsScreen({ badgeCount = 0 }: NotificationsScreenProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   notificationCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
+    borderRadius: 12,
     borderLeftWidth: 4,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  emptyMessage: {
-    fontSize: 14,
-    color: '#475569',
   },
 });

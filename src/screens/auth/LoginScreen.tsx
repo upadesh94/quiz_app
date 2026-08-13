@@ -16,14 +16,20 @@ export function LoginScreen({ navigation, route }: Props) {
   const dispatch = useAppDispatch();
   const { fontSize, containerPadding, isTablet } = useResponsive();
   const { colors, isDark } = useAppTheme();
+  
+  // Track active role selection dynamically
+  const [activeRole, setActiveRole] = useState<'student' | 'teacher'>(
+    route.params?.role === 'teacher' ? 'teacher' : 'student'
+  );
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
   const demoCredentials = AuthService.getDemoCredentials();
   const isFormValid = username.trim().length > 0 && password.trim().length > 0;
-  const roleLabel = route.params.role === 'teacher' ? 'Teacher' : 'Student';
 
   const onLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -35,7 +41,7 @@ export function LoginScreen({ navigation, route }: Props) {
     setError('');
 
     try {
-      const response = await AuthService.login(username, password, route.params.role);
+      const response = await AuthService.login(username, password, activeRole);
       dispatch(setAuth(response));
 
       if (response.user.role === 'teacher') {
@@ -51,134 +57,211 @@ export function LoginScreen({ navigation, route }: Props) {
     }
   };
 
+  const handleDemoFill = (role: 'student' | 'teacher') => {
+    setActiveRole(role);
+    if (role === 'student') {
+      setUsername(demoCredentials.student.username);
+      setPassword(demoCredentials.student.password);
+    } else {
+      setUsername(demoCredentials.teacher.username);
+      setPassword(demoCredentials.teacher.password);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.background, { backgroundColor: isDark ? '#160629' : colors.background }]}>
-        {isDark && <View style={styles.topGlow} />}
-        {isDark && <View style={styles.bottomGlow} />}
-        {isDark && <View style={styles.dots} />}
+      <View style={[styles.background, { backgroundColor: isDark ? '#090514' : colors.background }]}>
+        {/* Subtle Ambient Background Lighting */}
+        <View style={styles.topGlow} />
+        <View style={styles.bottomGlow} />
 
-        <View style={[styles.container, { paddingHorizontal: containerPadding }]}> 
-          <View style={{ maxWidth: isTablet ? 520 : '100%', alignSelf: 'center', width: '100%' }}>
+        <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
+          <View style={{ maxWidth: isTablet ? 480 : '100%', alignSelf: 'center', width: '100%' }}>
+            
+            {/* Header Brand Logo */}
             <View style={styles.logoSection}>
-              <BrandLogo size={isTablet ? 190 : 160} />
+              <BrandLogo size={isTablet ? 150 : 130} />
             </View>
 
-            <View style={[
-              styles.card,
-              !isDark && { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary }
-            ]}>
-              <View style={[
-                styles.lockBadge,
-                !isDark && { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: colors.primary }
-              ]}>
-                <Text style={styles.lockIcon}>🔒</Text>
-              </View>
-
-              <Text style={[styles.title, { fontSize: fontSize['3xl'] }, !isDark && { color: colors.textPrimary }]}>Welcome Back!</Text>
-              <Text style={[styles.subtitle, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>Login to continue your quiz journey</Text>
-
-              <View style={[styles.roleChip, !isDark && { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                <Text style={[styles.roleChipText, !isDark && { color: colors.primary }]}>{roleLabel} Login</Text>
-              </View>
-
-              <View style={styles.divider} />
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <View style={[styles.inputRow, !isDark && { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={[styles.inputIcon, !isDark && { backgroundColor: colors.primary }]}>
-                  <Text style={styles.inputIconText}>✉</Text>
-                </View>
-                <TextInput
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Enter your email"
-                  placeholderTextColor={isDark ? "#a78bfa" : colors.textSecondary}
-                  style={[styles.input, !isDark && { color: colors.textPrimary }]}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  textContentType="username"
-                  keyboardType="email-address"
-                />
-              </View>
-
-              <View style={[styles.inputRow, !isDark && { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={[styles.inputIcon, !isDark && { backgroundColor: colors.primary }]}>
-                  <Text style={styles.inputIconText}>🔒</Text>
-                </View>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter your password"
-                  placeholderTextColor={isDark ? "#a78bfa" : colors.textSecondary}
-                  style={[styles.input, !isDark && { color: colors.textPrimary }]}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  textContentType="password"
-                />
+            {/* Modern Classic Glassmorphism Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: isDark ? 'rgba(15, 10, 44, 0.85)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(168, 85, 247, 0.35)' : '#e2e8f0',
+                },
+              ]}
+            >
+              {/* Modern Segmented Role Switcher */}
+              <View style={[styles.tabSegmentBg, { backgroundColor: isDark ? '#1e1644' : '#f1f5f9' }]}>
                 <Pressable
-                  onPress={() => setShowPassword((current) => !current)}
-                  style={({ pressed }) => [styles.eyeButton, pressed ? { opacity: 0.7 } : null]}
+                  style={[
+                    styles.tabSegmentItem,
+                    activeRole === 'student' && [
+                      styles.tabSegmentActive,
+                      { backgroundColor: isDark ? '#6366f1' : '#ffffff' },
+                    ],
+                  ]}
+                  onPress={() => {
+                    setActiveRole('student');
+                    setError('');
+                  }}
                 >
-                  <Text style={[styles.eyeText, !isDark && { color: colors.textSecondary }]}>{showPassword ? '🙈' : '👁'}</Text>
+                  <Text
+                    style={[
+                      styles.tabSegmentText,
+                      { color: activeRole === 'student' ? (isDark ? '#FFFFFF' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b') },
+                    ]}
+                  >
+                    🎓 Student
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.tabSegmentItem,
+                    activeRole === 'teacher' && [
+                      styles.tabSegmentActive,
+                      { backgroundColor: isDark ? '#a855f7' : '#ffffff' },
+                    ],
+                  ]}
+                  onPress={() => {
+                    setActiveRole('teacher');
+                    setError('');
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.tabSegmentText,
+                      { color: activeRole === 'teacher' ? (isDark ? '#FFFFFF' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b') },
+                    ]}
+                  >
+                    👩‍🏫 Teacher
+                  </Text>
                 </Pressable>
               </View>
 
+              {/* Title & Subtitle */}
+              <Text style={[styles.title, { fontSize: fontSize['2xl'] }, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>
+                Welcome Back
+              </Text>
+              <Text style={[styles.subtitle, { fontSize: fontSize.sm }, { color: isDark ? '#94a3b8' : '#64748b' }]}>
+                Log in as {activeRole === 'student' ? 'Student' : 'Teacher'} to access your dashboard
+              </Text>
+
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+              {/* Email / Username Field */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#cbd5e1' : '#334155' }]}>Username or Email</Text>
+                <View style={[styles.inputRow, { backgroundColor: isDark ? '#191136' : '#f8fafc', borderColor: isDark ? 'rgba(168, 85, 247, 0.25)' : '#cbd5e1' }]}>
+                  <Text style={styles.inputIcon}>✉️</Text>
+                  <TextInput
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="e.g. student1 or teacher1"
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    style={[styles.input, { color: isDark ? '#FFFFFF' : '#0f172a' }]}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+
+              {/* Password Field */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#cbd5e1' : '#334155' }]}>Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: isDark ? '#191136' : '#f8fafc', borderColor: isDark ? 'rgba(168, 85, 247, 0.25)' : '#cbd5e1' }]}>
+                  <Text style={styles.inputIcon}>🔒</Text>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    style={[styles.input, { color: isDark ? '#FFFFFF' : '#0f172a' }]}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword((curr) => !curr)}
+                    style={styles.eyeBtn}
+                  >
+                    <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Login Button */}
               <Pressable
                 onPress={onLogin}
                 disabled={!isFormValid || isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  (!isFormValid || isLoading) ? styles.primaryButtonDisabled : null,
-                  pressed && isFormValid && !isLoading ? { opacity: 0.92, transform: [{ scale: 0.99 }] } : null,
+                  { backgroundColor: activeRole === 'student' ? '#6366f1' : '#8b5cf6' },
+                  (!isFormValid || isLoading) && styles.primaryButtonDisabled,
+                  pressed && isFormValid && !isLoading && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                 ]}
               >
-                <Text style={styles.primaryButtonText}>{isLoading ? 'LOGGING IN...' : 'LOGIN'}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {isLoading ? 'LOGGING IN...' : `SIGN IN AS ${activeRole.toUpperCase()}`}
+                </Text>
                 <Text style={styles.primaryButtonArrow}>→</Text>
               </Pressable>
 
+              {/* Auxiliary Links */}
               <View style={styles.linksRow}>
-                <View style={styles.linkLine} />
                 <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={[styles.linkText, !isDark && { color: colors.primary }]}>Forgot password?</Text>
+                  <Text style={[styles.linkText, { color: isDark ? '#a855f7' : '#6366f1' }]}>Forgot password?</Text>
                 </Pressable>
-                <View style={styles.linkLine} />
               </View>
 
+              {/* Create Account Link */}
               <View style={styles.createAccountRow}>
-                <Text style={[styles.createAccountMuted, !isDark && { color: colors.textSecondary }]}>Don’t have an account? </Text>
-                <Pressable onPress={() => navigation.navigate('Register', { role: route.params.role })}>
-                  <Text style={[styles.createAccountLink, !isDark && { color: colors.primary }]}>Create Account</Text>
+                <Text style={{ color: isDark ? '#cbd5e1' : '#64748b', fontSize: 14 }}>
+                  Don’t have an account?{' '}
+                </Text>
+                <Pressable onPress={() => navigation.navigate('Register', { role: activeRole })}>
+                  <Text style={[styles.createAccountLink, { color: isDark ? '#d8b4fe' : '#6366f1' }]}>
+                    Create Account
+                  </Text>
                 </Pressable>
               </View>
 
-              <View style={styles.demoRow}>
-                <Pressable
-                  onPress={() => {
-                    if (route.params.role === 'student') {
-                      setUsername(demoCredentials.student.username);
-                      setPassword(demoCredentials.student.password);
-                      return;
-                    }
+              {/* Demo Account Quick Buttons */}
+              <View style={styles.demoSection}>
+                <Text style={[styles.demoSectionLabel, { color: isDark ? '#64748b' : '#94a3b8' }]}>
+                  ⚡ QUICK DEMO ACCESS
+                </Text>
+                <View style={styles.demoRow}>
+                  <Pressable
+                    onPress={() => handleDemoFill('student')}
+                    style={[
+                      styles.demoPill,
+                      { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#e0e7ff', borderColor: '#6366f1' },
+                    ]}
+                  >
+                    <Text style={[styles.demoPillText, { color: '#6366f1' }]}>🎓 Demo Student</Text>
+                  </Pressable>
 
-                    setUsername(demoCredentials.teacher.username);
-                    setPassword(demoCredentials.teacher.password);
-                  }}
-                  style={({ pressed }) => [
-                    styles.demoButton,
-                    !isDark && { backgroundColor: colors.background, borderColor: colors.border },
-                    pressed ? { opacity: 0.85 } : null
-                  ]}
-                >
-                  <Text style={[styles.demoButtonText, !isDark && { color: colors.textPrimary }]}>Use Demo {roleLabel}</Text>
-                </Pressable>
+                  <Pressable
+                    onPress={() => handleDemoFill('teacher')}
+                    style={[
+                      styles.demoPill,
+                      { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff', borderColor: '#a855f7' },
+                    ]}
+                  >
+                    <Text style={[styles.demoPillText, { color: '#a855f7' }]}>👩‍🏫 Demo Teacher</Text>
+                  </Pressable>
+                </View>
               </View>
+
             </View>
           </View>
         </View>
@@ -188,259 +271,191 @@ export function LoginScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  background: {
-    flex: 1,
-    minHeight: '100%',
-  },
+  screen: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  background: { flex: 1, minHeight: '100%' },
   topGlow: {
     position: 'absolute',
-    top: -120,
-    left: -110,
+    top: -100,
+    left: -100,
     width: 320,
     height: 320,
-    borderRadius: 320,
-    backgroundColor: 'rgba(113, 50, 255, 0.16)',
+    borderRadius: 160,
+    backgroundColor: 'rgba(99, 102, 241, 0.14)',
   },
   bottomGlow: {
     position: 'absolute',
-    right: -120,
+    right: -100,
     bottom: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 300,
-    backgroundColor: 'rgba(78, 37, 181, 0.18)',
-  },
-  dots: {
-    position: 'absolute',
-    top: 130,
-    right: 28,
-    width: 80,
-    height: 110,
-    opacity: 0.35,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    shadowColor: '#a855f7',
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(168, 85, 247, 0.14)',
   },
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 24,
-    minHeight: '100%',
+    paddingVertical: 30,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   card: {
-    backgroundColor: 'rgba(15, 10, 44, 0.88)',
-    borderRadius: 28,
-    paddingTop: 34,
-    paddingHorizontal: 20,
-    paddingBottom: 22,
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.8)',
-    shadowColor: '#a855f7',
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
-  },
-  lockBadge: {
-    position: 'absolute',
-    top: -30,
-    alignSelf: 'center',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#24104f',
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#7c3aed',
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  lockIcon: {
-    fontSize: 26,
+  tabSegmentBg: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
+  },
+  tabSegmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabSegmentActive: {
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabSegmentText: {
+    fontWeight: '800',
+    fontSize: 14,
   },
   title: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '900',
     textAlign: 'center',
-    marginTop: 10,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    color: '#9ca3af',
     textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 18,
-  },
-  roleChip: {
-    alignSelf: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.55)',
-    backgroundColor: 'rgba(124, 58, 237, 0.14)',
-    marginBottom: 16,
-  },
-  roleChipText: {
-    color: '#d8b4fe',
-    fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 0.4,
-  },
-  divider: {
-    width: 42,
-    height: 4,
-    borderRadius: 999,
-    alignSelf: 'center',
-    backgroundColor: '#9b5cff',
-    marginBottom: 18,
+    marginTop: 4,
+    marginBottom: 20,
   },
   errorText: {
-    color: '#fca5a5',
-    backgroundColor: 'rgba(127, 29, 29, 0.22)',
+    color: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     borderWidth: 1,
-    borderColor: 'rgba(248, 113, 113, 0.28)',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
     textAlign: 'center',
+    fontSize: 13,
     fontWeight: '600',
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 64,
-    borderRadius: 20,
+    height: 52,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.36)',
-    backgroundColor: 'rgba(30, 19, 68, 0.78)',
-    marginBottom: 16,
-    paddingLeft: 10,
-    paddingRight: 8,
+    paddingHorizontal: 12,
   },
   inputIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(168, 85, 247, 0.92)',
-    marginRight: 12,
-  },
-  inputIconText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     paddingVertical: 0,
   },
-  eyeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eyeText: {
-    color: '#c4b5fd',
-    fontSize: 18,
+  eyeBtn: {
+    padding: 8,
   },
   primaryButton: {
-    minHeight: 60,
-    borderRadius: 20,
-    backgroundColor: '#4f46e5',
+    height: 54,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    marginTop: 6,
+    marginTop: 8,
     marginBottom: 16,
-    shadowColor: '#7c3aed',
+    shadowColor: '#6366f1',
     shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   primaryButtonDisabled: {
-    opacity: 0.55,
+    opacity: 0.5,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   primaryButtonArrow: {
     color: '#FFFFFF',
-    fontSize: 26,
-    lineHeight: 26,
-    marginTop: -2,
+    fontSize: 20,
+    fontWeight: '800',
+    marginLeft: 8,
   },
   linksRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
-  },
-  linkLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.28)',
+    marginBottom: 16,
   },
   linkText: {
-    color: '#a855f7',
-    fontSize: 14,
-    fontWeight: '600',
-    paddingHorizontal: 14,
+    fontSize: 13,
+    fontWeight: '700',
   },
   createAccountRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 14,
-  },
-  createAccountMuted: {
-    color: '#cbd5e1',
-    fontSize: 14,
+    marginBottom: 20,
   },
   createAccountLink: {
-    color: '#c084fc',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  demoRow: {
+  demoSection: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148, 163, 184, 0.15)',
+    paddingTop: 16,
     alignItems: 'center',
   },
-  demoButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(168, 85, 247, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.28)',
+  demoSectionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 10,
   },
-  demoButtonText: {
-    color: '#d8b4fe',
-    fontSize: 13,
-    fontWeight: '700',
+  demoRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  demoPill: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  demoPillText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

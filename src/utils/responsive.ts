@@ -1,11 +1,13 @@
 import { useWindowDimensions } from 'react-native';
 
 /**
- * Responsive design utilities for tablet and phone optimization
+ * Responsive design utilities for 320px mobile to large desktop screens
  */
 
 export interface ResponsiveValues {
+  isMobile: boolean;
   isTablet: boolean;
+  isDesktop: boolean;
   isLandscape: boolean;
   screenWidth: number;
   screenHeight: number;
@@ -16,6 +18,7 @@ export interface ResponsiveValues {
     md: number;
     lg: number;
     xl: number;
+    '2xl': number;
   };
   fontSize: {
     xs: number;
@@ -35,75 +38,60 @@ export function useResponsive(): ResponsiveValues {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   
-  // Determine if device is tablet (width > 600 or width > 800 in landscape)
-  const isTablet = width > 600;
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
+  const isDesktop = width >= 1024;
 
   const getSpacing = () => {
-    if (isTablet) {
-      return {
-        xs: 4,
-        sm: 8,
-        md: 16,
-        lg: 24,
-        xl: 32,
-      };
+    if (isDesktop) {
+      return { xs: 6, sm: 12, md: 20, lg: 28, xl: 36, '2xl': 48 };
     }
-    return {
-      xs: 3,
-      sm: 6,
-      md: 12,
-      lg: 16,
-      xl: 24,
-    };
+    if (isTablet) {
+      return { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, '2xl': 40 };
+    }
+    // Mobile (320px+)
+    return { xs: 4, sm: 8, md: 14, lg: 18, xl: 24, '2xl': 32 };
   };
 
   const getFontSize = () => {
-    if (isTablet) {
-      return {
-        xs: 10,
-        sm: 12,
-        base: 14,
-        lg: 18,
-        xl: 22,
-        '2xl': 28,
-        '3xl': 36,
-      };
+    if (isDesktop) {
+      return { xs: 12, sm: 13, base: 15, lg: 18, xl: 22, '2xl': 28, '3xl': 36 };
     }
-    return {
-      xs: 9,
-      sm: 11,
-      base: 13,
-      lg: 16,
-      xl: 20,
-      '2xl': 25,
-      '3xl': 32,
-    };
+    if (isTablet) {
+      return { xs: 11, sm: 12, base: 14, lg: 17, xl: 20, '2xl': 26, '3xl': 32 };
+    }
+    // Mobile (320px+)
+    return { xs: 10, sm: 12, base: 14, lg: 16, xl: 18, '2xl': 24, '3xl': 28 };
   };
 
   const getContainerPadding = () => {
-    if (isTablet) {
-      return isLandscape ? 32 : 24;
-    }
-    return isLandscape ? 16 : 12;
+    if (isDesktop) return 36;
+    if (isTablet) return 24;
+    return 16;
   };
 
   const getButtonHeight = () => {
-    return isTablet ? 56 : 48;
+    if (isDesktop) return 48;
+    if (isTablet) return 46;
+    return 44; // Touch target rule (min 44px)
   };
 
   const getInputHeight = () => {
-    return isTablet ? 56 : 48;
+    if (isDesktop) return 48;
+    if (isTablet) return 46;
+    return 44; // Touch target rule (min 44px)
   };
 
   const getMaxContentWidth = () => {
-    if (isTablet) {
-      return Math.min(width - 48, 800);
-    }
-    return width - 24;
+    if (isDesktop) return 1140;
+    if (isTablet) return 840;
+    return width - 32;
   };
 
   return {
+    isMobile,
     isTablet,
+    isDesktop,
     isLandscape,
     screenWidth: width,
     screenHeight: height,
@@ -116,8 +104,9 @@ export function useResponsive(): ResponsiveValues {
   };
 }
 
-export function getGridColumns(screenWidth: number, isTablet: boolean): number {
-  if (!isTablet) return 1;
-  if (screenWidth < 768) return 2;
-  return 3;
+export function getGridColumns(screenWidth: number, isTablet?: boolean): number {
+  if (isTablet === false || screenWidth < 640) return 1;
+  if (screenWidth < 1024) return 2;
+  if (screenWidth < 1400) return 3;
+  return 4;
 }

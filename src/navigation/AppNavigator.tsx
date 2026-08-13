@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { SplashScreen } from '../screens/common/SplashScreen';
@@ -7,15 +8,42 @@ import { RoleSelectionScreen } from '../screens/auth/RoleSelectionScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { SuperAdminLoginScreen } from '../screens/admin/SuperAdminLoginScreen';
+import { SuperAdminDashboardScreen } from '../screens/admin/SuperAdminDashboardScreen';
 import { StudentNavigator } from './StudentNavigator';
 import { TeacherNavigator } from './TeacherNavigator';
+import { useAppTheme } from '../utils/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+function checkIsAdminSecretUrl(): boolean {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const search = window.location.search || '';
+    const pathname = window.location.pathname || '';
+    return (
+      search.includes('adminPortal') ||
+      search.includes('quizapp_superadminupadesh') ||
+      search.includes('admin=true') ||
+      pathname.includes('/admin')
+    );
+  }
+  return false;
+}
+
 export function AppNavigator() {
+  const { colors } = useAppTheme();
+  const isAdminSecret = checkIsAdminSecretUrl();
+
   return (
-    <>
-      <Stack.Navigator initialRouteName="Landing">
+    <Stack.Navigator
+      initialRouteName={isAdminSecret ? 'SuperAdminLogin' : 'Login'}
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
+        headerTitleStyle: { fontWeight: '700' },
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
       <Stack.Screen
         name="Splash"
         component={SplashScreen}
@@ -35,9 +63,21 @@ export function AppNavigator() {
         name="Login"
         component={LoginScreen}
         options={{
-          headerShown: true,
-          title: 'Login',
-          headerStyle: { backgroundColor: '#f3f4f6' },
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="SuperAdminLogin"
+        component={SuperAdminLoginScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="SuperAdminDashboard"
+        component={SuperAdminDashboardScreen}
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -46,7 +86,6 @@ export function AppNavigator() {
         options={{
           headerShown: true,
           title: 'Create Account',
-          headerStyle: { backgroundColor: '#f3f4f6' },
         }}
       />
       <Stack.Screen
@@ -55,7 +94,6 @@ export function AppNavigator() {
         options={{
           headerShown: true,
           title: 'Reset Password',
-          headerStyle: { backgroundColor: '#f3f4f6' },
         }}
       />
       <Stack.Screen
@@ -69,6 +107,5 @@ export function AppNavigator() {
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
-    </>
   );
 }

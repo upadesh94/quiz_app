@@ -43,12 +43,14 @@ export function OptionSelector({ options, selectedOption, onSelect }: OptionSele
                 </Text>
               </View>
               <Text
+                selectable={false}
                 style={[
                   styles.text,
                   {
                     fontSize: fontSize.base,
                     fontWeight: selected ? '700' : '500',
-                  },
+                    userSelect: 'none',
+                  } as any,
                 ]}
               >
                 {option}

@@ -11,10 +11,12 @@ import { QuizService } from '../../services/quiz/QuizService';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme, radii, shadows } from '../../utils/theme';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizAttempt'>;
 
 export function QuizAttemptScreen({ navigation, route }: Props) {
+  usePreventScreenCapture();
   const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
   const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);

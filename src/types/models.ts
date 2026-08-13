@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'teacher';
+export type UserRole = 'student' | 'teacher' | 'superadmin';
 
 export interface User {
   id: string;
@@ -6,6 +6,9 @@ export interface User {
   fullName: string;
   role: UserRole;
   classLevel?: 8 | 9 | 10;
+  assignedClasses?: (8 | 9 | 10)[];
+  teachingSubjects?: string[];
+  qualification?: string;
   mobileNumber?: string;
   parentName?: string;
   parentMobileNumber?: string;
@@ -38,6 +41,7 @@ export interface Quiz {
   createdBy?: string;
   availableFrom?: string;
   availableUntil?: string;
+  createdAt?: string;
 }
 
 export interface Question {
@@ -137,6 +141,23 @@ export interface StudentPerformanceAnalytics {
   strongestSubject?: string;
   weakestSubject?: string;
   improvementDelta: number;
+  currentStreak: number;
+  averageTimeSeconds: number;
+  answerDistribution: {
+    correct: number;
+    incorrect: number;
+    skipped: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    quizId: string;
+    quizTitle: string;
+    score: number;
+    totalMarks: number;
+    percentage: number;
+    timeSeconds: number;
+    completedAt: string;
+  }>;
 }
 
 export interface StudentAnalyticsFilters {
@@ -205,6 +226,13 @@ export interface TeacherAdvancedAnalytics extends TeacherClassAnalytics {
   weakStudents: StudentLeaderboardEntry[];
   subjectHeatmap: SubjectHeatmapPoint[];
   subjectDistribution: PieSlice[];
+  currentStreak: number;
+  averageTimeSeconds: number;
+  answerDistribution: {
+    correct: number;
+    incorrect: number;
+    skipped: number;
+  };
   rawAttempts: Array<{
     id: string;
     studentId: string;
@@ -212,6 +240,7 @@ export interface TeacherAdvancedAnalytics extends TeacherClassAnalytics {
     quizId: string;
     quizTitle?: string;
     percentage: number;
+    timeSeconds: number;
     completedAt: string;
   }>;
 }

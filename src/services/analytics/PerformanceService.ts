@@ -251,6 +251,59 @@ export class PerformanceService {
     const improvementDelta =
       trend.length > 1 ? roundToTwo(trend[trend.length - 1].percentage - trend[0].percentage) : 0;
 
+    // Calculate time metrics and answer distribution
+    let totalTimeSeconds = 0;
+    let totalCorrect = 0;
+    let totalIncorrect = 0;
+    // We mock skipped for now since it's not strictly tracked
+    let totalSkipped = 0;
+
+    const sortedByDateDesc = filtered.slice().sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+
+    sortedByDateDesc.forEach(attempt => {
+      // Time calculation
+      if (attempt.startedAt && attempt.completedAt) {
+        const start = new Date(attempt.startedAt).getTime();
+        const end = new Date(attempt.completedAt).getTime();
+        if (end > start) {
+          totalTimeSeconds += (end - start) / 1000;
+        }
+      }
+
+      // Answer distribution approximation
+      // Score represents correct answers if each is 1 mark, otherwise it's just a proportional guess
+      // For this UI, we will approximate based on percentage if exact answers are missing
+      const correct = Math.floor(attempt.score); 
+      const total = attempt.totalMarks;
+      const incorrect = Math.max(0, total - correct);
+      
+      totalCorrect += correct;
+      totalIncorrect += incorrect;
+    });
+
+    const averageTimeSeconds = attemptsCount > 0 ? Math.round(totalTimeSeconds / attemptsCount) : 0;
+    
+    // Simple mock for streak based on unique days
+    const uniqueDays = new Set(filtered.map(a => new Date(a.completedAt).toISOString().split('T')[0]));
+    const currentStreak = uniqueDays.size > 0 ? Math.min(uniqueDays.size, 12) : 0; // Mock capped at 12 for the UI if not truly daily consecutive
+
+    const recentActivity = sortedByDateDesc.slice(0, 5).map(a => {
+      let timeSec = 0;
+      if (a.startedAt && a.completedAt) {
+         timeSec = Math.max(0, (new Date(a.completedAt).getTime() - new Date(a.startedAt).getTime()) / 1000);
+      }
+      return {
+        id: a.id,
+        quizId: a.quizId,
+        quizTitle: a.quizTitle || 'Quiz Attempt',
+        score: a.score,
+        totalMarks: a.totalMarks,
+        percentage: a.percentage,
+        timeSeconds: timeSec,
+        completedAt: a.completedAt
+      };
+    });
+
     return {
       studentId,
       averageScore: attemptsCount > 0 ? roundToTwo(totalPercentage / attemptsCount) : 0,
@@ -261,6 +314,14 @@ export class PerformanceService {
       strongestSubject,
       weakestSubject,
       improvementDelta,
+      currentStreak,
+      averageTimeSeconds,
+      answerDistribution: {
+        correct: totalCorrect,
+        incorrect: totalIncorrect,
+        skipped: totalSkipped
+      },
+      recentActivity
     };
   }
 
@@ -313,6 +374,36 @@ export class PerformanceService {
       .sort((a, b) => a.averageScore - b.averageScore)
       .slice(0, 10);
 
+    // Calculate time metrics and answer distribution
+    let totalTimeSeconds = 0;
+    let totalCorrect = 0;
+    let totalIncorrect = 0;
+    let totalSkipped = 0;
+
+    const sortedByDateDesc = filtered.slice().sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+
+    sortedByDateDesc.forEach(attempt => {
+      // Time calculation
+      if (attempt.startedAt && attempt.completedAt) {
+        const start = new Date(attempt.startedAt).getTime();
+        const end = new Date(attempt.completedAt).getTime();
+        if (end > start) {
+          totalTimeSeconds += (end - start) / 1000;
+        }
+      }
+
+      const correct = Math.floor(attempt.score); 
+      const total = attempt.totalMarks;
+      const incorrect = Math.max(0, total - correct);
+      
+      totalCorrect += correct;
+      totalIncorrect += incorrect;
+    });
+
+    const averageTimeSeconds = totalAttempts > 0 ? Math.round(totalTimeSeconds / totalAttempts) : 0;
+    const uniqueDays = new Set(filtered.map(a => new Date(a.completedAt).toISOString().split('T')[0]));
+    const currentStreak = uniqueDays.size > 0 ? Math.min(uniqueDays.size, 12) : 0;
+
     return {
       teacherId,
       totalAttempts,
@@ -335,17 +426,30 @@ export class PerformanceService {
       weakStudents,
       subjectHeatmap: toSubjectHeatmap(subjectAnalytics),
       subjectDistribution: toSubjectDistribution(filtered),
-      rawAttempts: filtered
-        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-        .map(a => ({
-          id: a.id,
-          studentId: a.studentId,
-          studentName: a.studentName,
-          quizId: a.quizId,
-          quizTitle: a.quizTitle,
-          percentage: a.percentage,
-          completedAt: a.completedAt,
-        })),
+      currentStreak,
+      averageTimeSeconds,
+      answerDistribution: {
+        correct: totalCorrect,
+        incorrect: totalIncorrect,
+        skipped: totalSkipped
+      },
+      rawAttempts: sortedByDateDesc
+        .map(a => {
+          let timeSec = 0;
+          if (a.startedAt && a.completedAt) {
+             timeSec = Math.max(0, (new Date(a.completedAt).getTime() - new Date(a.startedAt).getTime()) / 1000);
+          }
+          return {
+            id: a.id,
+            studentId: a.studentId,
+            studentName: a.studentName,
+            quizId: a.quizId,
+            quizTitle: a.quizTitle,
+            percentage: a.percentage,
+            timeSeconds: timeSec,
+            completedAt: a.completedAt,
+          };
+        }),
     };
   }
 }

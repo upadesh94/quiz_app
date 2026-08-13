@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TeacherDashboard } from '../screens/teacher/TeacherDashboard';
 import { CreateQuizScreen } from '../screens/teacher/CreateQuizScreen';
@@ -10,6 +10,7 @@ import { AddQuestionsScreen } from '../screens/teacher/AddQuestionsScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { StudentService } from '../services/teacher/StudentService';
+import { useAppTheme, radii } from '../utils/theme';
 
 export type TeacherHomeStackParamList = {
   TeacherDashboard: undefined;
@@ -47,7 +48,7 @@ const StudentsStack = createNativeStackNavigator<TeacherStudentsStackParamList>(
 const AnalyticsStack = createNativeStackNavigator<TeacherAnalyticsStackParamList>();
 const Tab = createBottomTabNavigator<TeacherTabParamList>();
 
-function AnimatedTeacherTabItem({
+function TeacherTabIcon({
   focused,
   emoji,
   label,
@@ -58,45 +59,38 @@ function AnimatedTeacherTabItem({
   label: string;
   badgeCount?: number;
 }) {
-  const scale = useRef(new Animated.Value(focused ? 1.02 : 0.96)).current;
-  const translateY = useRef(new Animated.Value(focused ? -3 : 0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: focused ? 1.02 : 0.96,
-        useNativeDriver: true,
-        speed: 20,
-        bounciness: 7,
-      }),
-      Animated.timing(translateY, {
-        toValue: focused ? -3 : 0,
-        duration: 170,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [focused, scale, translateY]);
+  const { colors, isDark } = useAppTheme();
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.tabItem,
-        focused ? styles.tabItemActive : styles.tabItemInactive,
         {
-          transform: [{ scale }, { translateY }],
+          borderRadius: radii.md,
+          backgroundColor: focused ? colors.primaryLight : 'transparent',
         },
       ]}
     >
       <View style={styles.notificationIcon}>
         <Text style={styles.tabEmoji}>{emoji}</Text>
         {badgeCount > 0 && (
-          <View style={styles.badge}>
+          <View style={[styles.badge, { backgroundColor: colors.error, borderColor: colors.surface }]}>
             <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
           </View>
         )}
       </View>
-      <Text style={[styles.tabText, focused ? styles.tabTextActive : styles.tabTextInactive]}>{label}</Text>
-    </Animated.View>
+      <Text
+        style={[
+          styles.tabText,
+          {
+            color: focused ? colors.primary : isDark ? colors.textSecondary : colors.textMuted,
+            fontWeight: focused ? '700' : '500',
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -113,12 +107,15 @@ function TeacherHomeStackScreen() {
 }
 
 function TeacherCreateStackScreen() {
+  const { colors } = useAppTheme();
+
   return (
     <CreateStack.Navigator
       screenOptions={{
         headerShown: true,
         headerTitle: 'Create Quiz',
-        headerStyle: { backgroundColor: '#f0fdf4' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -129,12 +126,15 @@ function TeacherCreateStackScreen() {
 }
 
 function TeacherStudentsStackScreen() {
+  const { colors } = useAppTheme();
+
   return (
     <StudentsStack.Navigator
       screenOptions={{
         headerShown: true,
         headerTitle: 'Manage Students',
-        headerStyle: { backgroundColor: '#f0fdf4' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -144,12 +144,15 @@ function TeacherStudentsStackScreen() {
 }
 
 function TeacherAnalyticsStackScreen() {
+  const { colors } = useAppTheme();
+
   return (
     <AnalyticsStack.Navigator
       screenOptions={{
         headerShown: true,
         headerTitle: 'Class Analytics',
-        headerStyle: { backgroundColor: '#f0fdf4' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -159,6 +162,7 @@ function TeacherAnalyticsStackScreen() {
 }
 
 export function TeacherNavigator() {
+  const { colors } = useAppTheme();
   const [badgeCount, setBadgeCount] = useState(0);
 
   useEffect(() => {
@@ -176,10 +180,19 @@ export function TeacherNavigator() {
     return () => clearInterval(interval);
   }, []);
 
+  const tabBarStyle = {
+    backgroundColor: colors.surface,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    height: 64,
+    paddingBottom: 6,
+    paddingTop: 6,
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: tabBarStyle,
         tabBarShowLabel: false,
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -189,28 +202,28 @@ export function TeacherNavigator() {
         name="Home"
         component={TeacherHomeStackScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTeacherTabItem focused={focused} emoji="🏠" label="Home" />,
+          tabBarIcon: ({ focused }) => <TeacherTabIcon focused={focused} emoji="🏠" label="Home" />,
         }}
       />
       <Tab.Screen
         name="CreateTab"
         component={TeacherCreateStackScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTeacherTabItem focused={focused} emoji="➕" label="Create" />,
+          tabBarIcon: ({ focused }) => <TeacherTabIcon focused={focused} emoji="➕" label="Create" />,
         }}
       />
       <Tab.Screen
         name="StudentsTab"
         component={TeacherStudentsStackScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTeacherTabItem focused={focused} emoji="👥" label="Students" />,
+          tabBarIcon: ({ focused }) => <TeacherTabIcon focused={focused} emoji="👥" label="Students" />,
         }}
       />
       <Tab.Screen
         name="AnalyticsTab"
         component={TeacherAnalyticsStackScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTeacherTabItem focused={focused} emoji="📊" label="Analytics" />,
+          tabBarIcon: ({ focused }) => <TeacherTabIcon focused={focused} emoji="📊" label="Analytics" />,
         }}
       />
       <Tab.Screen
@@ -218,7 +231,7 @@ export function TeacherNavigator() {
         component={NotificationsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <AnimatedTeacherTabItem focused={focused} emoji="🔔" label="Alerts" badgeCount={badgeCount} />
+            <TeacherTabIcon focused={focused} emoji="🔔" label="Alerts" badgeCount={badgeCount} />
           ),
         }}
       />
@@ -226,7 +239,7 @@ export function TeacherNavigator() {
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTeacherTabItem focused={focused} emoji="👤" label="Profile" />,
+          tabBarIcon: ({ focused }) => <TeacherTabIcon focused={focused} emoji="👤" label="Profile" />,
         }}
       />
     </Tab.Navigator>
@@ -234,61 +247,38 @@ export function TeacherNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#064e3b',
-    borderTopWidth: 0,
-    elevation: 0,
-    height: 76,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
   tabItem: {
-    minWidth: 66,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    minWidth: 64,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-  },
-  tabItemActive: {
-    backgroundColor: '#065f46',
-  },
-  tabItemInactive: {
-    backgroundColor: 'transparent',
+    minHeight: 44,
   },
   tabEmoji: {
     fontSize: 16,
   },
   tabText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#ffffff',
-  },
-  tabTextInactive: {
-    color: '#dcfce7',
+    fontSize: 11,
+    marginTop: 2,
   },
   notificationIcon: {
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: -8,
+    top: -6,
     right: -8,
-    backgroundColor: '#dc2626',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#064e3b',
+    borderWidth: 1,
   },
   badgeText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 9,
   },
 });

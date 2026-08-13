@@ -1,21 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View, Dimensions, Text } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
-import { useAppTheme, radii, shadows } from '../../utils/theme';
+import { useAppTheme } from '../../utils/theme';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { PerformanceService } from '../../services/analytics/PerformanceService';
 import { StudentPerformanceAnalytics } from '../../types/models';
+import {
+  DashboardHeader,
+  OverallPerformanceCard,
+  StatsGrid,
+  PerformanceTrendChart,
+  SubjectPerformanceList,
+  StrengthsAndWeaknesses,
+  AnswerDistribution,
+  RecentActivityList
+} from '../../components/student/DashboardComponents';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentDashboard'>;
 
 export function StudentDashboard({ navigation }: Props) {
-  const { fontSize, spacing, containerPadding, isTablet } = useResponsive();
+  const { containerPadding, spacing, isTablet } = useResponsive();
   const { colors, isDark } = useAppTheme();
   const user = useAppSelector((state) => state.auth.user);
   const [analytics, setAnalytics] = useState<StudentPerformanceAnalytics | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  // We need screen width for the charts
+  const screenWidth = Dimensions.get('window').width - (containerPadding * 2);
 
   useEffect(() => {
     const loadStudentStats = async () => {
@@ -36,85 +49,49 @@ export function StudentDashboard({ navigation }: Props) {
     loadStudentStats();
   }, [user?.id]);
 
-  const improvement = analytics?.improvementDelta ?? 0;
-  const improvementLabel = improvement >= 0 ? `+${improvement}%` : `${improvement}%`;
-
   return (
     <View style={[styles.page, { backgroundColor: isDark ? '#160629' : colors.background }]}>
-      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
-          <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: '#dbeafe', fontSize: fontSize.sm, fontWeight: '700' }}>STUDENT HUB</Text>
-            <Text style={{ color: '#ffffff', fontSize: fontSize['2xl'], fontWeight: '800', marginTop: spacing.xs }}>
-              Hi {user?.fullName?.split(' ')[0] || 'Student'}
-            </Text>
-            <Text style={{ color: '#bfdbfe', fontSize: fontSize.sm, marginTop: spacing.sm }}>
-              Your learning summary is updated automatically after each quiz.
-            </Text>
-          </View>
-
-          <Text style={{ marginTop: spacing.xl, marginBottom: spacing.sm, fontSize: fontSize.lg, fontWeight: '700', color: isDark ? '#FFFFFF' : colors.textPrimary }}>
-            Your Stats
-          </Text>
+          
+          <DashboardHeader name={user?.fullName?.split(' ')[0] || 'Student'} />
 
           {isLoadingStats ? (
-            <View style={[styles.statCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
-              <ActivityIndicator size="small" color={isDark ? '#a855f7' : colors.primary} />
-              <Text style={{ marginLeft: spacing.sm, color: isDark ? '#cbd5e1' : colors.textSecondary }}>Loading your stats...</Text>
+            <View style={{ padding: 40, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={{ marginTop: 12, color: isDark ? '#cbd5e1' : '#64748b' }}>Loading dashboard...</Text>
+            </View>
+          ) : analytics ? (
+            <View>
+              <OverallPerformanceCard score={analytics.averageScore} />
+              
+              <StatsGrid analytics={analytics} />
+              
+              <PerformanceTrendChart 
+                data={analytics.trend.map(t => t.percentage)} 
+                width={screenWidth} 
+              />
+              
+              <SubjectPerformanceList subjects={analytics.subjectAnalytics} />
+              
+              <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12 }}>
+                <StrengthsAndWeaknesses 
+                  strength={analytics.strongestSubject}
+                  strScore={analytics.subjectAnalytics.find(s => s.subject === analytics.strongestSubject)?.averagePercentage}
+                  weakness={analytics.weakestSubject}
+                  weakScore={analytics.subjectAnalytics.find(s => s.subject === analytics.weakestSubject)?.averagePercentage}
+                />
+                <AnswerDistribution dist={analytics.answerDistribution} />
+              </View>
+              
+              <View style={{ marginTop: 12 }}>
+                <RecentActivityList activity={analytics.recentActivity} />
+              </View>
             </View>
           ) : (
-            <View style={styles.statsGrid}>
-              <View style={[styles.statCardWide, { width: isTablet ? '48%' : '100%', backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
-                <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Overall Score</Text>
-                <Text style={[styles.statValue, isDark && { color: '#FFFFFF' }]}>{analytics?.averageScore ?? 0}%</Text>
-                <Text style={[styles.statSubtext, isDark && { color: '#cbd5e1' }]}>Average across all your attempts</Text>
-              </View>
-
-              <View style={[styles.statCardWide, { width: isTablet ? '48%' : '100%', backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
-                <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Quiz Attempts</Text>
-                <Text style={[styles.statValue, isDark && { color: '#FFFFFF' }]}>{analytics?.attemptsCount ?? 0}</Text>
-                <Text style={[styles.statSubtext, isDark && { color: '#cbd5e1' }]}>Total quizzes you have submitted</Text>
-              </View>
-
-              <View style={[styles.statCardWide, { width: isTablet ? '48%' : '100%', backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
-                <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Best Subject</Text>
-                <Text style={[styles.statValueSmall, isDark && { color: '#FFFFFF' }]}>{analytics?.strongestSubject ?? 'Not enough data'}</Text>
-                <Text style={[styles.statSubtext, isDark && { color: '#cbd5e1' }]}>Your highest scoring subject so far</Text>
-              </View>
-
-              <View style={[styles.statCardWide, { width: isTablet ? '48%' : '100%', backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]}>
-                <Text style={[styles.statLabel, isDark && { color: '#a78bfa' }]}>Needs Practice</Text>
-                <Text style={[styles.statValueSmall, isDark && { color: '#FFFFFF' }]}>{analytics?.weakestSubject ?? 'Not enough data'}</Text>
-                <Text
-                  style={[
-                    styles.statSubtext,
-                    isDark && { color: '#cbd5e1' },
-                    { color: improvement >= 0 ? colors.success : colors.error, fontWeight: '700' },
-                  ]}
-                >
-                  Progress trend: {improvementLabel}
-                </Text>
-              </View>
-            </View>
+             <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 40 }}>Failed to load data.</Text>
           )}
 
-          <Text style={{ marginTop: spacing.xl, marginBottom: spacing.md, fontSize: fontSize.lg, fontWeight: '700', color: isDark ? '#FFFFFF' : '#0f172a' }}>
-            Quick Actions
-          </Text>
-
-          <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: spacing.md }}>
-            <Pressable style={[styles.actionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]} onPress={() => navigation.navigate('AvailableQuizzes')}>
-              <Text style={styles.actionEmoji}>📚</Text>
-              <Text style={[styles.actionTitle, isDark && { color: '#FFFFFF' }]}>Start Quiz</Text>
-              <Text style={[styles.actionSub, isDark && { color: '#cbd5e1' }]}>Open available quizzes and begin attempt.</Text>
-            </Pressable>
-
-            <Pressable style={[styles.actionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : colors.border }]} onPress={() => navigation.navigate('PerformanceAnalytics')}>
-              <Text style={styles.actionEmoji}>📈</Text>
-              <Text style={[styles.actionTitle, isDark && { color: '#FFFFFF' }]}>View Analytics</Text>
-              <Text style={[styles.actionSub, isDark && { color: '#cbd5e1' }]}>Check your trend, pass rate and subject scores.</Text>
-            </Pressable>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -122,75 +99,7 @@ export function StudentDashboard({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  container: {
-    paddingVertical: 32,
-  },
-  heroCard: {
-    borderRadius: radii.lg,
-    padding: 18,
-    ...shadows.card,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    padding: 12,
-    ...shadows.soft,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  statCardWide: {
-    width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    padding: 12,
-    ...shadows.soft,
-  },
-  statLabel: {
-    fontSize: 12,
-    marginBottom: 6,
-    fontWeight: '600',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  statValueSmall: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  statSubtext: {
-    marginTop: 6,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  actionCard: {
-    flex: 1,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    padding: 16,
-    ...shadows.card,
-  },
-  actionEmoji: {
-    fontSize: 24,
-    marginBottom: 10,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  actionSub: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  page: { flex: 1 },
+  scroll: { flex: 1 },
+  container: { paddingTop: 20 },
 });

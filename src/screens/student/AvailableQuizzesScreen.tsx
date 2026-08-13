@@ -20,7 +20,7 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
   const user = useAppSelector((state) => state.auth.user);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [attemptedQuizIds, setAttemptedQuizIds] = useState<Set<string>>(new Set());
-  const [selectedClassLevel, setSelectedClassLevel] = useState<8 | 9 | 10>(user?.classLevel ?? 8);
+  const [selectedClassLevel] = useState<8 | 9 | 10>(user?.classLevel ?? 8);
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const numColumns = getGridColumns(screenWidth, isTablet);
 
@@ -136,33 +136,7 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
       </View>
 
       <View style={[styles.filterCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#e2e8f0' }]}>
-        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Class Level</Text>
-        <View style={styles.chipRow}>
-          {CLASS_LEVELS.map((classLevel) => (
-            <Pressable
-              key={classLevel}
-              onPress={() => {
-                setSelectedClassLevel(classLevel);
-                setSelectedSubject('all');
-              }}
-              style={[
-                styles.chip,
-                selectedClassLevel === classLevel 
-                  ? [styles.chipActive, isDark && { backgroundColor: '#a855f7', borderColor: '#a855f7' }]
-                  : [styles.chipInactive, isDark && { backgroundColor: 'transparent', borderColor: 'rgba(168, 85, 247, 0.5)' }]
-              ]}
-            >
-              <Text style={[
-                selectedClassLevel === classLevel ? styles.chipTextActive : styles.chipTextInactive,
-                isDark && selectedClassLevel !== classLevel && { color: '#d8b4fe' }
-              ]}>
-                Class {classLevel}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Subject</Text>
+        <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Filter by Subject for Class {selectedClassLevel}</Text>
         <View style={styles.chipRow}>
           <Pressable
             onPress={() => setSelectedSubject('all')}

@@ -18,24 +18,34 @@ export async function registerWithUsername(params: {
   fullName: string;
   role: User['role'];
   classLevel?: User['classLevel'];
+  assignedClasses?: number[];
+  teachingSubjects?: string[];
+  qualification?: string;
+  mobileNumber?: string;
+  email?: string;
 }) {
   console.log('[FirebaseAuth] register:start', {
     username: params.username,
     role: params.role,
     classLevel: params.classLevel ?? null,
   });
-  const email = usernameToEmail(params.username);
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, params.password);
+  const email = params.email && params.email.trim() ? params.email.trim() : usernameToEmail(params.username);
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, usernameToEmail(params.username), params.password);
 
   await updateProfile(credential.user, { displayName: params.fullName });
 
   await setDoc(doc(firestoreDb, 'users', credential.user.uid), {
     uid: credential.user.uid,
     username: params.username,
-    email,
+    email: params.email || email,
     fullName: params.fullName,
     role: params.role,
     classLevel: params.classLevel ?? null,
+    assignedClasses: params.assignedClasses ?? (params.role === 'teacher' ? [8, 9, 10] : undefined),
+    teachingSubjects: params.teachingSubjects ?? (params.role === 'teacher' ? ['Mathematics', 'Science'] : undefined),
+    qualification: params.qualification ?? null,
+    mobileNumber: params.mobileNumber ?? null,
+    initialPassword: params.password,
     isActive: true,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

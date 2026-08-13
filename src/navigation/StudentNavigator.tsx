@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { StudentDashboard } from '../screens/student/StudentDashboard';
@@ -10,6 +10,7 @@ import { QuizResultScreen } from '../screens/student/QuizResultScreen';
 import { PerformanceAnalyticsScreen } from '../screens/student/PerformanceAnalyticsScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
+import { useAppTheme, radii } from '../utils/theme';
 
 export type StudentHomeStackParamList = {
   StudentDashboard: undefined;
@@ -42,7 +43,7 @@ const QuizzesStack = createNativeStackNavigator<StudentQuizzesStackParamList>();
 const AnalyticsStack = createNativeStackNavigator<StudentAnalyticsStackParamList>();
 const Tab = createBottomTabNavigator<StudentTabParamList>();
 
-function AnimatedStudentTabItem({
+function StudentTabIcon({
   focused,
   emoji,
   label,
@@ -51,38 +52,37 @@ function AnimatedStudentTabItem({
   emoji: string;
   label: string;
 }) {
-  const scale = useRef(new Animated.Value(focused ? 1.02 : 0.96)).current;
-  const translateY = useRef(new Animated.Value(focused ? -3 : 0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: focused ? 1.02 : 0.96,
-        useNativeDriver: true,
-        speed: 20,
-        bounciness: 7,
-      }),
-      Animated.timing(translateY, {
-        toValue: focused ? -3 : 0,
-        duration: 170,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [focused, scale, translateY]);
+  const { colors, isDark } = useAppTheme();
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.tabItem,
-        focused ? styles.tabItemActive : styles.tabItemInactive,
         {
-          transform: [{ scale }, { translateY }],
+          borderRadius: radii.md,
+          backgroundColor: focused
+            ? colors.primaryLight
+            : 'transparent',
         },
       ]}
     >
       <Text style={styles.tabEmoji}>{emoji}</Text>
-      <Text style={[styles.tabText, focused ? styles.tabTextActive : styles.tabTextInactive]}>{label}</Text>
-    </Animated.View>
+      <Text
+        style={[
+          styles.tabText,
+          {
+            color: focused
+              ? colors.primary
+              : isDark
+              ? colors.textSecondary
+              : colors.textMuted,
+            fontWeight: focused ? '700' : '500',
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -99,12 +99,15 @@ function StudentHomeStackScreen() {
 }
 
 function StudentQuizzesStackScreen() {
+  const { colors } = useAppTheme();
+
   return (
     <QuizzesStack.Navigator
       screenOptions={{
         headerShown: true,
         headerTitle: 'Available Quizzes',
-        headerStyle: { backgroundColor: '#eef6ff' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -116,12 +119,15 @@ function StudentQuizzesStackScreen() {
 }
 
 function StudentAnalyticsStackScreen() {
+  const { colors } = useAppTheme();
+
   return (
     <AnalyticsStack.Navigator
       screenOptions={{
         headerShown: true,
         headerTitle: 'Performance Analytics',
-        headerStyle: { backgroundColor: '#eef6ff' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -131,10 +137,21 @@ function StudentAnalyticsStackScreen() {
 }
 
 export function StudentNavigator() {
+  const { colors } = useAppTheme();
+
+  const tabBarStyle = {
+    backgroundColor: colors.surface,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    height: 64,
+    paddingBottom: 6,
+    paddingTop: 6,
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: tabBarStyle,
         tabBarShowLabel: false,
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -148,8 +165,8 @@ export function StudentNavigator() {
           const hideTabBar = routeName === 'QuizAttempt';
 
           return {
-            tabBarStyle: [styles.tabBar, hideTabBar ? { display: 'none' } : null],
-            tabBarIcon: ({ focused }) => <AnimatedStudentTabItem focused={focused} emoji="🏠" label="Home" />,
+            tabBarStyle: [tabBarStyle, hideTabBar ? { display: 'none' } : null],
+            tabBarIcon: ({ focused }) => <StudentTabIcon focused={focused} emoji="🏠" label="Home" />,
           };
         }}
       />
@@ -161,8 +178,8 @@ export function StudentNavigator() {
           const hideTabBar = routeName === 'QuizAttempt';
 
           return {
-            tabBarStyle: [styles.tabBar, hideTabBar ? { display: 'none' } : null],
-            tabBarIcon: ({ focused }) => <AnimatedStudentTabItem focused={focused} emoji="📝" label="Quizzes" />,
+            tabBarStyle: [tabBarStyle, hideTabBar ? { display: 'none' } : null],
+            tabBarIcon: ({ focused }) => <StudentTabIcon focused={focused} emoji="📝" label="Quizzes" />,
           };
         }}
       />
@@ -170,21 +187,21 @@ export function StudentNavigator() {
         name="AnalyticsTab"
         component={StudentAnalyticsStackScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedStudentTabItem focused={focused} emoji="📊" label="Stats" />,
+          tabBarIcon: ({ focused }) => <StudentTabIcon focused={focused} emoji="📊" label="Stats" />,
         }}
       />
       <Tab.Screen
         name="NotificationsTab"
         component={NotificationsScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedStudentTabItem focused={focused} emoji="🔔" label="Alerts" />,
+          tabBarIcon: ({ focused }) => <StudentTabIcon focused={focused} emoji="🔔" label="Alerts" />,
         }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedStudentTabItem focused={focused} emoji="👤" label="Profile" />,
+          tabBarIcon: ({ focused }) => <StudentTabIcon focused={focused} emoji="👤" label="Profile" />,
         }}
       />
     </Tab.Navigator>
@@ -192,40 +209,19 @@ export function StudentNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#0f172a',
-    borderTopWidth: 0,
-    elevation: 0,
-    height: 76,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
   tabItem: {
-    minWidth: 66,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    minWidth: 64,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-  },
-  tabItemActive: {
-    backgroundColor: '#1e3a8a',
-  },
-  tabItemInactive: {
-    backgroundColor: 'transparent',
+    minHeight: 44,
   },
   tabEmoji: {
     fontSize: 16,
   },
   tabText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#ffffff',
-  },
-  tabTextInactive: {
-    color: '#bfdbfe',
+    fontSize: 11,
+    marginTop: 2,
   },
 });

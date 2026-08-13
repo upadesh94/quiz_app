@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
+import { DateTimePickerWrapper } from '../common/DateTimePickerWrapper';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme, radii, shadows } from '../../utils/theme';
 import { getSubjectsForClass } from '../../services/utils/Constants';
@@ -44,8 +45,17 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
   const [tags, setTags] = useState('');
   const [shuffleQuestions, setShuffleQuestions] = useState(false);
   const [allowReview, setAllowReview] = useState(true);
-  const [publishNow, setPublishNow] = useState(true);
-  const [limitToToday, setLimitToToday] = useState(false);
+  
+  const [publishOption, setPublishOption] = useState<'draft' | 'publish' | 'schedule'>('publish');
+  
+  // Launch Presets (including 'custom' for calendar/clock picker)
+  const [launchPreset, setLaunchPreset] = useState<'now' | '1h' | 'tomorrow' | 'next-monday' | 'custom'>('now');
+  const [customLaunchDate, setCustomLaunchDate] = useState<Date>(new Date());
+  
+  // Duration Presets (including 'custom' for calendar/clock picker)
+  const [durationPreset, setDurationPreset] = useState<'no-limit' | '2h' | '1d' | '3d' | '1w' | 'custom'>('no-limit');
+  const [customExpiryDate, setCustomExpiryDate] = useState<Date | null>(null);
+  
   const [error, setError] = useState('');
   const selectedClassLevel = [8, 9, 10].includes(Number(classLevel)) ? (Number(classLevel) as 8 | 9 | 10) : 10;
   const subjectPresets = getSubjectsForClass(selectedClassLevel);
@@ -73,7 +83,52 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
 
   const toggleChip = (value: string, setter: (value: string) => void) => setter(value);
 
-  const buildPayload = (overrideIsPublished?: boolean): QuizSubmitPayload | null => {
+  const calculateScheduleDates = (): { launchDate: Date; expiryDate: Date | null } => {
+    const now = new Date();
+    let launchDate = new Date();
+
+    if (launchPreset === '1h') {
+      launchDate = new Date(now.getTime() + 60 * 60 * 1000);
+    } else if (launchPreset === 'tomorrow') {
+      launchDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0);
+    } else if (launchPreset === 'next-monday') {
+      const resultDate = new Date();
+      resultDate.setDate(now.getDate() + ((7 - now.getDay() + 1) % 7 || 7));
+      resultDate.setHours(9, 0, 0, 0);
+      launchDate = resultDate;
+    } else if (launchPreset === 'custom') {
+      launchDate = customLaunchDate || now;
+    }
+
+    let expiryDate: Date | null = null;
+    if (durationPreset === 'custom') {
+      expiryDate = customExpiryDate;
+    } else if (durationPreset !== 'no-limit') {
+      let durationMs = 0;
+      if (durationPreset === '2h') durationMs = 2 * 60 * 60 * 1000;
+      else if (durationPreset === '1d') durationMs = 24 * 60 * 60 * 1000;
+      else if (durationPreset === '3d') durationMs = 3 * 24 * 60 * 60 * 1000;
+      else if (durationPreset === '1w') durationMs = 7 * 24 * 60 * 60 * 1000;
+
+      expiryDate = new Date(launchDate.getTime() + durationMs);
+    }
+
+    return { launchDate, expiryDate };
+  };
+
+  const getCalculatedScheduleText = () => {
+    const { launchDate, expiryDate } = calculateScheduleDates();
+    const launchStr = launchDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    if (!expiryDate) {
+      return `Quiz will launch on ${launchStr} and remain open indefinitely.`;
+    }
+
+    const expiryStr = expiryDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `Quiz will launch on ${launchStr} and automatically close on ${expiryStr}.`;
+  };
+
+  const buildPayload = (): QuizSubmitPayload | null => {
     const trimmedTitle = title.trim();
     const trimmedSubject = subject.trim();
     const parsedTimeLimit = Number(timeLimitMinutes);
@@ -105,9 +160,24 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
       return null;
     }
 
+    let availableFrom: string | undefined;
+    let availableUntil: string | undefined;
+
+    if (publishOption === 'schedule') {
+      const { launchDate, expiryDate } = calculateScheduleDates();
+      availableFrom = launchDate.toISOString();
+      if (expiryDate) {
+        if (expiryDate.getTime() <= launchDate.getTime()) {
+          setError('Expiry time must be after the launch time.');
+          return null;
+        }
+        availableUntil = expiryDate.toISOString();
+      }
+    }
+
     setError('');
 
-    const shouldPublish = overrideIsPublished ?? publishNow;
+    const isPublished = publishOption !== 'draft';
 
     return {
       title: trimmedTitle,
@@ -125,21 +195,15 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         .split(',')
         .map((tag) => tag.trim())
         .filter(Boolean),
-      status: shouldPublish ? 'published' : 'draft',
-      isPublished: shouldPublish,
-      availableFrom: limitToToday ? new Date(new Date().setHours(0, 0, 0, 0)).toISOString() : undefined,
-      availableUntil: limitToToday ? new Date(new Date().setHours(23, 59, 59, 999)).toISOString() : undefined,
+      status: isPublished ? 'published' : 'draft',
+      isPublished,
+      availableFrom,
+      availableUntil,
     };
   };
 
   const handleSubmit = () => {
     const payload = buildPayload();
-    if (!payload) return;
-    onSubmit(payload);
-  };
-
-  const handlePublish = () => {
-    const payload = buildPayload(true);
     if (!payload) return;
     onSubmit(payload);
   };
@@ -156,24 +220,35 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
     }
   };
 
+  const handleDifficultyChange = (level: 'easy' | 'medium' | 'hard') => {
+    setDifficulty(level);
+    if (level === 'easy') {
+      setPassPercentage('50');
+    } else if (level === 'medium') {
+      setPassPercentage('40');
+    } else if (level === 'hard') {
+      setPassPercentage('33');
+    }
+  };
+
   return (
     <View>
       <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Quick Setup</Text>
-        <Text style={[styles.quickHelp, { fontSize: fontSize.sm, marginBottom: spacing.sm }, isDark && { color: '#cbd5e1' }]}>Choose a template to prefill settings and create faster.</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Template Presets</Text>
+        <Text style={[styles.quickHelp, { fontSize: fontSize.sm, marginBottom: spacing.sm }, isDark && { color: '#cbd5e1' }]}>Prefill defaults instantly based on your quiz type.</Text>
         <View style={styles.row}>
           <Pressable style={[styles.chip, isDark ? styles.chipInactiveDark : styles.chipInactiveLight]} onPress={() => applyTemplate('quick-test')}>
-            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>Quick Test</Text>
+            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>⚡ Quick Test</Text>
           </Pressable>
           <Pressable style={[styles.chip, isDark ? styles.chipInactiveDark : styles.chipInactiveLight]} onPress={() => applyTemplate('exam-mode')}>
-            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>Exam Mode</Text>
+            <Text style={isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight}>📝 Exam Mode</Text>
           </Pressable>
         </View>
       </View>
 
       <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Basic Details</Text>
-        <CustomInput value={title} onChangeText={setTitle} placeholder="e.g. Algebra Unit Test" label="Quiz Title" />
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Basic Information</Text>
+        <CustomInput value={title} onChangeText={setTitle} placeholder="e.g. Quadratic Equations Quiz" label="Quiz Title" />
         <CustomInput value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" label="Subject" />
         <View style={[styles.row, { marginBottom: spacing.md }]}>
           {subjectPresets.map((preset) => (
@@ -198,13 +273,13 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         <CustomInput
           value={description}
           onChangeText={setDescription}
-          placeholder="Short summary for students"
+          placeholder="What should students know before starting?"
           label="Description"
         />
       </View>
 
       <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Class and Duration</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Target Class & Duration</Text>
         <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Class Level</Text>
         <View style={[styles.row, { marginBottom: spacing.md }]}> 
           {['8', '9', '10'].map((value) => (
@@ -227,8 +302,8 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
           ))}
         </View>
 
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Time Limit</Text>
-        <View style={styles.row}>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Time Limit (Minutes)</Text>
+        <View style={[styles.row, { marginBottom: spacing.sm }]}>
           {[10, 20, 30, 45, 60].map((minutes) => (
             <Pressable
               key={minutes}
@@ -255,18 +330,18 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
           value={timeLimitMinutes}
           onChangeText={setTimeLimitMinutes}
           placeholder="Custom minutes (1-240)"
-          label="Custom Time Limit"
+          label="Or Custom Time Limit"
         />
       </View>
 
       <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Difficulty and Scoring</Text>
-        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Difficulty</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Scoring & Difficulty</Text>
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Difficulty Level</Text>
         <View style={[styles.row, { marginBottom: spacing.md }]}> 
           {['easy', 'medium', 'hard'].map((value) => (
             <Pressable
               key={value}
-              onPress={() => setDifficulty(value as 'easy' | 'medium' | 'hard')}
+              onPress={() => handleDifficultyChange(value as 'easy' | 'medium' | 'hard')}
               style={[
                 styles.chip,
                 difficulty === value
@@ -291,7 +366,7 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
               value={passPercentage}
               onChangeText={setPassPercentage}
               placeholder="40"
-              label="Pass %"
+              label="Passing Score (%)"
             />
           </View>
           <View style={styles.halfField}>
@@ -299,14 +374,137 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
               value={negativeMarking}
               onChangeText={setNegativeMarking}
               placeholder="0"
-              label="Negative Marks"
+              label="Negative Marks/Incorrect"
             />
           </View>
         </View>
       </View>
 
       <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Advanced Options</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Publish Settings & Scheduling</Text>
+        
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.sm, marginBottom: spacing.xs }, isDark && { color: '#a78bfa' }]}>Publish Options</Text>
+        <View style={[styles.row, { marginBottom: spacing.md }]}>
+          {(['draft', 'publish', 'schedule'] as const).map((option) => (
+            <Pressable
+              key={option}
+              onPress={() => setPublishOption(option)}
+              style={[
+                styles.chip,
+                publishOption === option
+                  ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+              ]}
+            >
+              <Text style={
+                publishOption === option
+                  ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                  : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+              }>
+                {option === 'draft' && '📁 Save Draft'}
+                {option === 'publish' && '🚀 Publish Now'}
+                {option === 'schedule' && '📅 Schedule Quiz'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {publishOption === 'schedule' && (
+          <View style={{ marginBottom: spacing.md, gap: spacing.md }}>
+            <View>
+              <Text style={[styles.fieldLabel, { fontSize: fontSize.sm, marginBottom: spacing.xs }, isDark && { color: '#a78bfa' }]}>When should this quiz launch?</Text>
+              <View style={[styles.row, { marginBottom: spacing.xs }]}>
+                {(['now', '1h', 'tomorrow', 'next-monday', 'custom'] as const).map((preset) => (
+                  <Pressable
+                    key={preset}
+                    onPress={() => setLaunchPreset(preset)}
+                    style={[
+                      styles.chip,
+                      launchPreset === preset
+                        ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                        : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                    ]}
+                  >
+                    <Text style={
+                      launchPreset === preset
+                        ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                        : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                    }>
+                      {preset === 'now' && 'Immediately'}
+                      {preset === '1h' && 'In 1 Hour'}
+                      {preset === 'tomorrow' && 'Tomorrow Morning'}
+                      {preset === 'next-monday' && 'Next Monday'}
+                      {preset === 'custom' && '📅 Pick Date/Time'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {launchPreset === 'custom' && (
+                <View style={{ marginTop: spacing.xs }}>
+                   <DateTimePickerWrapper
+                     label="Launch Time"
+                     value={customLaunchDate}
+                     onChange={setCustomLaunchDate}
+                     isDark={isDark}
+                     colors={colors}
+                   />
+                </View>
+              )}
+            </View>
+
+            <View style={{ marginTop: spacing.xs }}>
+              <Text style={[styles.fieldLabel, { fontSize: fontSize.sm, marginBottom: spacing.xs }, isDark && { color: '#a78bfa' }]}>How long should it remain active?</Text>
+              <View style={[styles.row, { marginBottom: spacing.xs }]}>
+                {(['no-limit', '2h', '1d', '3d', '1w', 'custom'] as const).map((preset) => (
+                  <Pressable
+                    key={preset}
+                    onPress={() => setDurationPreset(preset)}
+                    style={[
+                      styles.chip,
+                      durationPreset === preset
+                        ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                        : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                    ]}
+                  >
+                    <Text style={
+                      durationPreset === preset
+                        ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                        : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                    }>
+                      {preset === 'no-limit' && 'No Limit'}
+                      {preset === '2h' && '2 Hours'}
+                      {preset === '1d' && '1 Day'}
+                      {preset === '3d' && '3 Days'}
+                      {preset === '1w' && '1 Week'}
+                      {preset === 'custom' && '⏰ Set Expiry'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {durationPreset === 'custom' && (
+                <View style={{ marginTop: spacing.xs }}>
+                   <DateTimePickerWrapper
+                     label="Expiry Time"
+                     value={customExpiryDate || new Date()}
+                     onChange={setCustomExpiryDate}
+                     isDark={isDark}
+                     colors={colors}
+                   />
+                </View>
+              )}
+            </View>
+
+            <View style={[styles.livePreviewCard, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.1)' : '#f0fdf4', borderColor: isDark ? 'rgba(124, 58, 237, 0.2)' : '#bbf7d0' }]}>
+               <Text style={{color: isDark ? '#a7f3d0' : '#166534', fontSize: 13, fontWeight: '600'}}>{getCalculatedScheduleText()}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.sectionCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : colors.card, borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe' }]}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Advanced Configurations</Text>
         <Text style={[styles.fieldLabel, { fontSize: fontSize.sm }, isDark && { color: '#a78bfa' }]}>Instructions for Students</Text>
         <TextInput
           value={instructions}
@@ -349,41 +547,21 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
             <Text style={styles.toggleLabel}>{allowReview ? 'ON' : 'OFF'}</Text>
           </Pressable>
         </View>
-
-        <View style={styles.switchRow}>
-          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Publish immediately</Text>
-          <Pressable
-            onPress={() => setPublishNow((prev) => !prev)}
-            style={[styles.toggleButton, publishNow ? styles.toggleOn : styles.toggleOff]}
-          >
-            <Text style={styles.toggleLabel}>{publishNow ? 'ON' : 'OFF'}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.switchRow}>
-          <Text style={[styles.switchText, isDark && { color: '#cbd5e1' }]}>Limit to today only</Text>
-          <Pressable
-            onPress={() => setLimitToToday((prev) => !prev)}
-            style={[styles.toggleButton, limitToToday ? styles.toggleOn : styles.toggleOff]}
-          >
-            <Text style={styles.toggleLabel}>{limitToToday ? 'ON' : 'OFF'}</Text>
-          </Pressable>
-        </View>
       </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <CustomButton
-        title={publishNow ? 'Create and Publish Quiz' : 'Save as Draft'}
+        title={
+          publishOption === 'draft'
+            ? 'Save as Draft'
+            : publishOption === 'schedule'
+            ? 'Schedule Quiz'
+            : 'Create and Publish Quiz'
+        }
         onPress={handleSubmit}
         disabled={!canCreateQuiz}
-        variant={publishNow ? 'primary' : 'secondary'}
-      />
-
-      <CustomButton
-        title="Publish Quiz"
-        onPress={handlePublish}
-        disabled={!canCreateQuiz}
+        variant={publishOption === 'draft' ? 'secondary' : 'primary'}
       />
     </View>
   );
@@ -515,4 +693,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
+  livePreviewCard: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 10
+  }
 });

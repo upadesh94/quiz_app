@@ -1,161 +1,278 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { BrandLogo } from '../../components/common/BrandLogo';
 import { RootStackParamList } from '../../navigation/types';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme } from '../../utils/theme';
+import { BrandLogo } from '../../components/common/BrandLogo';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Landing'>;
 
 export function LandingScreen({ navigation }: Props) {
   const { fontSize, containerPadding, isTablet } = useResponsive();
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
+
+  const handleGoToLogin = (role: 'student' | 'teacher' = 'student') => {
+    navigation.navigate('Login', { role });
+  };
+
+  const handleExplore = () => {
+    navigation.navigate('RoleSelection');
+  };
 
   return (
     <ScrollView
-      style={[styles.screen, { backgroundColor: isDark ? '#160629' : colors.background }]}
+      style={[styles.screen, { backgroundColor: isDark ? '#090514' : '#f8fafc' }]}
       contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.background, { backgroundColor: isDark ? '#160629' : colors.background }]}>
-        {isDark && <View style={styles.topGlow} />}
-        {isDark && <View style={styles.bottomGlow} />}
+      {/* Background Decorative Mesh / Ambient Glow */}
+      <View style={styles.ambientGlowTop} />
+      <View style={styles.ambientGlowBottom} />
 
-        <View style={[styles.container, { paddingHorizontal: containerPadding }]}> 
-          <View style={{ maxWidth: isTablet ? 520 : '100%', alignSelf: 'center', width: '100%' }}>
-            <View style={styles.logoSection}>
-              <BrandLogo size={isTablet ? 220 : 180} />
-            </View>
-
-            <View style={[
-              styles.heroCard,
-              !isDark && {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                shadowColor: colors.primary,
-              }
-            ]}>
-              <Text style={[styles.heroTitle, { fontSize: fontSize['3xl'] }, !isDark && { color: colors.textPrimary }]}>EduQuiz</Text>
-              <Text style={[styles.heroSubtitle, { fontSize: fontSize.xl }, !isDark && { color: colors.primary }]}>Elevate Your Learning Experience</Text>
-              <Text style={[styles.heroText, { fontSize: fontSize.base }, !isDark && { color: colors.textSecondary }]}>
-                Join thousands of students and teachers in an interactive, seamless, and smart quiz platform.
-              </Text>
-
-              <Pressable
-                onPress={() => navigation.navigate('RoleSelection')}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed ? { opacity: 0.9, transform: [{ scale: 0.98 }] } : null,
-                ]}
-              >
-                <Text style={styles.primaryButtonText}>GET STARTED</Text>
-                <Text style={styles.primaryButtonArrow}>→</Text>
-              </Pressable>
-            </View>
-          </View>
+      {/* Header NavBar */}
+      <View style={[styles.header, { paddingHorizontal: containerPadding }]}>
+        <View style={styles.logoRow}>
+          <Text style={{ fontSize: 28, marginRight: 10 }}>🎓</Text>
+          <Text style={[styles.logoText, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>
+            Quiz<Text style={{ color: '#6366f1' }}>Master</Text>
+          </Text>
         </View>
+
+        <Pressable
+          style={[styles.headerLoginBtn, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#e0e7ff', borderColor: '#6366f1' }]}
+          onPress={() => handleGoToLogin('student')}
+        >
+          <Text style={[styles.headerLoginBtnText, { color: '#6366f1' }]}>Login →</Text>
+        </Pressable>
+      </View>
+
+      {/* Main Minimal Hero Section */}
+      <View style={[styles.heroContainer, { paddingHorizontal: containerPadding }]}>
+        {/* Brand Emblem / Logo Centerpiece */}
+        <View style={styles.logoWrapper}>
+          <BrandLogo size={isTablet ? 200 : 160} />
+        </View>
+
+        {/* Minimal Hero Tagline */}
+        <View style={[styles.tagBadge, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.12)' : '#f3e8ff' }]}>
+          <Text style={[styles.tagBadgeText, { color: isDark ? '#d8b4fe' : '#7e22ce' }]}>✨ Modern Learning Platform</Text>
+        </View>
+
+        <Text style={[styles.mainTitle, { fontSize: isTablet ? 52 : 38, color: isDark ? '#FFFFFF' : '#0f172a' }]}>
+          Empowering Every{'\n'}
+          <Text style={{ color: '#6366f1' }}>Student & Teacher</Text>
+        </Text>
+
+        <Text style={[styles.subTitle, { color: isDark ? '#94a3b8' : '#475569', fontSize: fontSize.lg }]}>
+          A minimal, classic, and powerful quiz app designed to sharpen your skills with instant analytics and chapter-wise tests.
+        </Text>
+
+        {/* Direct Action Buttons */}
+        <View style={[styles.actionRow, { flexDirection: isTablet ? 'row' : 'column' }]}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              { backgroundColor: '#6366f1' },
+              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+            ]}
+            onPress={() => handleGoToLogin('student')}
+          >
+            <Text style={styles.primaryBtnText}>Log In to QuizMaster</Text>
+            <Text style={styles.btnArrow}>→</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              { borderColor: isDark ? 'rgba(148, 163, 184, 0.3)' : '#cbd5e1', backgroundColor: isDark ? 'rgba(15, 10, 44, 0.6)' : '#ffffff' },
+              pressed && { opacity: 0.9 },
+            ]}
+            onPress={handleExplore}
+          >
+            <Text style={[styles.secondaryBtnText, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>Select Role</Text>
+            <Text style={{ fontSize: 16, marginLeft: 6 }}>👥</Text>
+          </Pressable>
+        </View>
+
+        {/* Minimal Classic Quick Role Cards */}
+        <View style={[styles.quickRoleContainer, { flexDirection: isTablet ? 'row' : 'column' }]}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.roleCard,
+              { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.7)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#e2e8f0' },
+              pressed && { transform: [{ translateY: -2 }] },
+            ]}
+            onPress={() => handleGoToLogin('student')}
+          >
+            <View style={[styles.roleCardIcon, { backgroundColor: isDark ? '#1e1b4b' : '#e0e7ff' }]}>
+              <Text style={{ fontSize: 26 }}>🎓</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={[styles.roleCardTitle, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>Student Login</Text>
+              <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 13, marginTop: 2 }}>
+                Take quizzes, track score trends & earn badges
+              </Text>
+            </View>
+            <Text style={[styles.roleCardArrow, { color: '#6366f1' }]}>→</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.roleCard,
+              { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.7)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : '#e2e8f0' },
+              pressed && { transform: [{ translateY: -2 }] },
+            ]}
+            onPress={() => handleGoToLogin('teacher')}
+          >
+            <View style={[styles.roleCardIcon, { backgroundColor: isDark ? '#3b0764' : '#f3e8ff' }]}>
+              <Text style={{ fontSize: 26 }}>👩‍🏫</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={[styles.roleCardTitle, { color: isDark ? '#FFFFFF' : '#0f172a' }]}>Teacher Login</Text>
+              <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 13, marginTop: 2 }}>
+                Create live quizzes, schedule tests & manage results
+              </Text>
+            </View>
+            <Text style={[styles.roleCardArrow, { color: '#a855f7' }]}>→</Text>
+          </Pressable>
+        </View>
+
+        {/* Footer info */}
+        <Text style={[styles.footerText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
+          Protected by QuizMaster Security • Version 1.0
+        </Text>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  background: {
-    flex: 1,
-    minHeight: '100%',
-  },
-  topGlow: {
+  screen: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  ambientGlowTop: {
     position: 'absolute',
-    top: -120,
-    left: -110,
-    width: 320,
-    height: 320,
-    borderRadius: 320,
-    backgroundColor: 'rgba(113, 50, 255, 0.16)',
+    top: -100,
+    left: '25%',
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
   },
-  bottomGlow: {
+  ambientGlowBottom: {
     position: 'absolute',
-    right: -120,
-    bottom: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 300,
-    backgroundColor: 'rgba(78, 37, 181, 0.18)',
+    bottom: -80,
+    right: '20%',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: 'rgba(168, 85, 247, 0.1)',
   },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 24,
-    minHeight: '100%',
-  },
-  logoSection: {
+  header: {
+    height: 80,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  heroCard: {
-    backgroundColor: 'rgba(15, 10, 44, 0.88)',
-    borderRadius: 28,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+  logoRow: { flexDirection: 'row', alignItems: 'center' },
+  logoText: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
+  headerLoginBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.72)',
-    shadowColor: '#a855f7',
-    shadowOpacity: 0.24,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+  },
+  headerLoginBtnText: { fontWeight: '800', fontSize: 14 },
+  heroContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  logoWrapper: {
+    marginBottom: 20,
     alignItems: 'center',
   },
-  heroTitle: {
-    color: '#FFFFFF',
+  tagBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginBottom: 20,
+  },
+  tagBadgeText: { fontSize: 13, fontWeight: '700' },
+  mainTitle: {
     fontWeight: '900',
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  heroSubtitle: {
-    color: '#d8b4fe',
-    fontWeight: '800',
+    lineHeight: 54,
     marginBottom: 16,
-    textAlign: 'center',
+    letterSpacing: -0.8,
   },
-  heroText: {
+  subTitle: {
     textAlign: 'center',
-    marginBottom: 32,
-    color: '#cbd5e1',
-    lineHeight: 24,
+    lineHeight: 28,
+    maxWidth: 580,
+    marginBottom: 36,
   },
-  primaryButton: {
-    minHeight: 64,
+  actionRow: {
+    gap: 14,
+    marginBottom: 44,
     width: '100%',
-    borderRadius: 20,
-    backgroundColor: '#4f46e5',
+    maxWidth: 500,
+    justifyContent: 'center',
+  },
+  primaryBtn: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    shadowColor: '#7c3aed',
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    paddingHorizontal: 28,
+    shadowColor: '#6366f1',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+  primaryBtnText: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
+  btnArrow: { color: '#ffffff', fontSize: 20, fontWeight: '800', marginLeft: 8 },
+  secondaryBtn: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    borderWidth: 1,
   },
-  primaryButtonArrow: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    lineHeight: 26,
-    marginTop: -2,
+  secondaryBtnText: { fontWeight: '700', fontSize: 15 },
+  quickRoleContainer: {
+    width: '100%',
+    maxWidth: 720,
+    gap: 16,
+    marginBottom: 40,
   },
+  roleCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  roleCardIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleCardTitle: { fontSize: 16, fontWeight: '800' },
+  roleCardArrow: { fontSize: 22, fontWeight: '800', marginLeft: 8 },
+  footerText: { fontSize: 12, textAlign: 'center', marginTop: 10 },
 });
