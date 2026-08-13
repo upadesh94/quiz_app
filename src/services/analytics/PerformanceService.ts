@@ -62,6 +62,24 @@ function applyStudentFilters(attempts: AttemptDoc[], filters: StudentAnalyticsFi
       return false;
     }
 
+    if (filters.quizId && attempt.quizId !== filters.quizId) {
+      return false;
+    }
+
+    if (filters.startDate) {
+      const start = new Date(`${filters.startDate}T00:00:00.000Z`).getTime();
+      if (new Date(attempt.completedAt).getTime() < start) {
+        return false;
+      }
+    }
+
+    if (filters.endDate) {
+      const end = new Date(`${filters.endDate}T23:59:59.999Z`).getTime();
+      if (new Date(attempt.completedAt).getTime() > end) {
+        return false;
+      }
+    }
+
     return true;
   });
 }
@@ -207,6 +225,10 @@ function applyTeacherFilters(attempts: AttemptDoc[], filters: TeacherAnalyticsFi
       return false;
     }
 
+    if (filters.quizId && attempt.quizId !== filters.quizId) {
+      return false;
+    }
+
     if (filters.resultType === 'passed' && !attempt.passed) {
       return false;
     }
@@ -257,6 +279,16 @@ export class PerformanceService {
     let totalIncorrect = 0;
     // We mock skipped for now since it's not strictly tracked
     let totalSkipped = 0;
+
+    const quizMap = attempts.reduce<Record<string, { id: string; title: string }>>((acc, item) => {
+      if (item.quizId) {
+        acc[item.quizId] = {
+          id: item.quizId,
+          title: item.quizTitle || item.quizId,
+        };
+      }
+      return acc;
+    }, {});
 
     const sortedByDateDesc = filtered.slice().sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
@@ -321,7 +353,8 @@ export class PerformanceService {
         incorrect: totalIncorrect,
         skipped: totalSkipped
       },
-      recentActivity
+      recentActivity,
+      quizOptions: Object.values(quizMap)
     };
   }
 
@@ -358,6 +391,16 @@ export class PerformanceService {
         acc[item.studentId] = {
           id: item.studentId,
           name: item.studentName || item.studentId,
+        };
+      }
+      return acc;
+    }, {});
+
+    const quizMap = allAttempts.reduce<Record<string, { id: string; title: string }>>((acc, item) => {
+      if (item.quizId) {
+        acc[item.quizId] = {
+          id: item.quizId,
+          title: item.quizTitle || item.quizId,
         };
       }
       return acc;
@@ -418,6 +461,7 @@ export class PerformanceService {
       classPerformance: toClassPerformance(filtered),
       studentOptions: Object.values(studentMap),
       subjectOptions: Array.from(new Set(filtered.map((item) => item.subject).filter(Boolean))).sort(),
+      quizOptions: Object.values(quizMap),
       weakestSubject: subjectAnalytics[subjectAnalytics.length - 1]?.subject,
       strongestSubject: subjectAnalytics[0]?.subject,
       weakStudentsCount: weakStudents.length,

@@ -159,11 +159,15 @@ export interface StudentPerformanceAnalytics {
     timeSeconds: number;
     completedAt: string;
   }>;
+  quizOptions?: Array<{ id: string; title: string }>;
 }
 
 export interface StudentAnalyticsFilters {
   classLevel?: 8 | 9 | 10;
   subject?: string;
+  quizId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface TeacherClassAnalytics {
@@ -179,6 +183,7 @@ export interface TeacherAnalyticsFilters {
   classLevel?: 8 | 9 | 10;
   studentId?: string;
   subject?: string;
+  quizId?: string;
   startDate?: string;
   endDate?: string;
   resultType?: 'all' | 'passed' | 'failed';
@@ -219,6 +224,7 @@ export interface TeacherAdvancedAnalytics extends TeacherClassAnalytics {
   classPerformance: ClassBarPoint[];
   studentOptions: Array<{ id: string; name: string }>;
   subjectOptions: string[];
+  quizOptions: Array<{ id: string; title: string }>;
   weakestSubject?: string;
   strongestSubject?: string;
   weakStudentsCount: number;

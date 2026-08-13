@@ -9,6 +9,7 @@ import { StudentPerformanceAnalytics } from '../../types/models';
 import { getSubjectsForClass } from '../../services/utils/Constants';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme, radii } from '../../utils/theme';
+import { DateTimePickerWrapper } from '../../components/common/DateTimePickerWrapper';
 
 export function PerformanceAnalyticsScreen() {
   const { fontSize, spacing } = useResponsive();
@@ -17,6 +18,9 @@ export function PerformanceAnalyticsScreen() {
   const [analytics, setAnalytics] = useState<StudentPerformanceAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedQuizId, setSelectedQuizId] = useState('all');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const studentClassLevel = user?.classLevel ?? 8;
   const subjectOptions = useMemo(() => getSubjectsForClass(studentClassLevel), [studentClassLevel]);
@@ -35,6 +39,9 @@ export function PerformanceAnalyticsScreen() {
         const response = await PerformanceService.getStudentPerformance(user.id, {
           classLevel: studentClassLevel,
           subject: selectedSubject === 'all' ? undefined : selectedSubject,
+          quizId: selectedQuizId === 'all' ? undefined : selectedQuizId,
+          startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
+          endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
         });
         setAnalytics(response);
       } finally {
@@ -43,7 +50,7 @@ export function PerformanceAnalyticsScreen() {
     };
 
     loadAnalytics();
-  }, [user?.id, studentClassLevel, selectedSubject]);
+  }, [user?.id, studentClassLevel, selectedSubject, selectedQuizId, startDate, endDate]);
 
   useEffect(() => {
     const isValidSubject = selectedSubject === 'all' || subjectOptions.some((subject) => subject === selectedSubject);
@@ -102,6 +109,68 @@ export function PerformanceAnalyticsScreen() {
                 ]}>{subject}</Text>
               </Pressable>
             ))}
+          </View>
+
+          {analytics?.quizOptions && analytics.quizOptions.length > 0 && (
+            <>
+              <Text style={[styles.filterLabel, { marginTop: spacing.md }, !isDark && { color: colors.textSecondary }]}>Quiz</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.chipRow}>
+                <Pressable
+                  onPress={() => setSelectedQuizId('all')}
+                  style={[
+                    styles.chip,
+                    selectedQuizId === 'all'
+                      ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                      : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                  ]}
+                >
+                  <Text style={[
+                    selectedQuizId === 'all'
+                      ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                      : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                  ]}>All Quizzes</Text>
+                </Pressable>
+                {analytics.quizOptions.map((q) => (
+                  <Pressable
+                    key={q.id}
+                    onPress={() => setSelectedQuizId(q.id)}
+                    style={[
+                      styles.chip,
+                      selectedQuizId === q.id
+                        ? (isDark ? styles.chipActiveDark : styles.chipActiveLight)
+                        : (isDark ? styles.chipInactiveDark : styles.chipInactiveLight)
+                    ]}
+                  >
+                    <Text style={[
+                      selectedQuizId === q.id
+                        ? (isDark ? styles.chipTextActiveDark : styles.chipTextActiveLight)
+                        : (isDark ? styles.chipTextInactiveDark : styles.chipTextInactiveLight)
+                    ]}>{q.title}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </>
+          )}
+
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <DateTimePickerWrapper
+                label="Start Date"
+                value={startDate}
+                onChange={setStartDate}
+                isDark={isDark}
+                colors={colors}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <DateTimePickerWrapper
+                label="End Date"
+                value={endDate}
+                onChange={setEndDate}
+                isDark={isDark}
+                colors={colors}
+              />
+            </View>
           </View>
         </CustomCard>
 

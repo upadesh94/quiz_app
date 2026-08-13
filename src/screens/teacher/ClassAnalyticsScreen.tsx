@@ -14,6 +14,7 @@ import {
 } from '../../components/teacher/TeacherDashboardComponents';
 import { SubjectPerformanceList, RecentActivityList } from '../../components/student/DashboardComponents'; // Reuse these!
 import { CustomInput } from '../../components/common/CustomInput';
+import { DateTimePickerWrapper } from '../../components/common/DateTimePickerWrapper';
 
 export function ClassAnalyticsScreen() {
   const user = useAppSelector((state) => state.auth.user);
@@ -24,6 +25,9 @@ export function ClassAnalyticsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<'all' | '8' | '9' | '10'>('all');
   const [selectedStudent, setSelectedStudent] = useState('all');
+  const [selectedQuizId, setSelectedQuizId] = useState('all');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const contentWidth = screenWidth - (containerPadding * 2);
 
@@ -39,6 +43,9 @@ export function ClassAnalyticsScreen() {
       const response = await PerformanceService.getTeacherAdvancedAnalytics(user.id, {
         classLevel: selectedClass === 'all' ? undefined : (Number(selectedClass) as 8 | 9 | 10),
         studentId: selectedStudent === 'all' ? undefined : selectedStudent,
+        quizId: selectedQuizId === 'all' ? undefined : selectedQuizId,
+        startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
+        endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
       });
       setAnalytics(response);
     } finally {
@@ -48,7 +55,7 @@ export function ClassAnalyticsScreen() {
 
   useEffect(() => {
     loadAnalytics();
-  }, [user?.id, selectedClass, selectedStudent]);
+  }, [user?.id, selectedClass, selectedStudent, selectedQuizId, startDate, endDate]);
 
   return (
     <View style={[styles.page, { backgroundColor: isDark ? '#160629' : colors.background }]}>
@@ -67,8 +74,6 @@ export function ClassAnalyticsScreen() {
             </View>
             
             <View style={styles.filtersContainer}>
-               {/* Filters Mocked slightly for aesthetics based on reference */}
-               <View style={styles.pill}><Text style={{color: isDark ? '#FFFFFF' : '#0f172a', fontWeight: '500', fontSize: 13}}>📅 Last 30 days ⌄</Text></View>
                <View style={styles.teacherBadge}>
                   <View style={{backgroundColor: '#e0e7ff', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 8}}>
                     <Text style={{color: '#4f46e5', fontWeight: '700', fontSize: 12}}>TS</Text>
@@ -81,23 +86,48 @@ export function ClassAnalyticsScreen() {
             </View>
           </View>
 
-          {/* Simple Dropdowns for demo */}
           <View style={{flexDirection: 'row', gap: 10, marginBottom: 20}}>
             <View style={{flex: 1}}>
               <CustomInput
-                label="Filter by Class"
+                label="Class (all, 8, 9, 10)"
                 value={selectedClass}
                 onChangeText={(val: any) => setSelectedClass(val)}
-                placeholder="all, 8, 9, or 10"
+                placeholder="all"
               />
             </View>
             <View style={{flex: 1}}>
-              <CustomInput
-                label="Filter by Student ID"
-                value={selectedStudent}
-                onChangeText={setSelectedStudent}
-                placeholder="Enter ID or 'all'"
-              />
+              <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: isDark ? '#a78bfa' : colors.primary }}>Student Name</Text>
+              <select 
+                value={selectedStudent} 
+                onChange={(e) => setSelectedStudent(e.target.value)}
+                style={{ width: '100%', padding: 10, borderRadius: 10, backgroundColor: isDark ? '#0f0a2c' : '#ffffff', color: isDark ? '#ffffff' : '#000000', borderColor: isDark ? '#4c1d95' : '#93c5fd' }}
+              >
+                <option value="all">All Students</option>
+                {analytics?.studentOptions?.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+                ))}
+              </select>
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: isDark ? '#a78bfa' : colors.primary }}>Quiz Title</Text>
+              <select 
+                value={selectedQuizId} 
+                onChange={(e) => setSelectedQuizId(e.target.value)}
+                style={{ width: '100%', padding: 10, borderRadius: 10, backgroundColor: isDark ? '#0f0a2c' : '#ffffff', color: isDark ? '#ffffff' : '#000000', borderColor: isDark ? '#4c1d95' : '#93c5fd' }}
+              >
+                <option value="all">All Quizzes</option>
+                {analytics?.quizOptions?.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.title}</option>
+                ))}
+              </select>
+            </View>
+          </View>
+          <View style={{flexDirection: 'row', gap: 10, marginBottom: 20}}>
+            <View style={{flex: 1}}>
+              <DateTimePickerWrapper label="Start Date" value={startDate} onChange={setStartDate} isDark={isDark} colors={colors} />
+            </View>
+            <View style={{flex: 1}}>
+              <DateTimePickerWrapper label="End Date" value={endDate} onChange={setEndDate} isDark={isDark} colors={colors} />
             </View>
           </View>
 
