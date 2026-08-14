@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
@@ -6,6 +6,7 @@ import { DateTimePickerWrapper } from '../common/DateTimePickerWrapper';
 import { useResponsive } from '../../utils/responsive';
 import { useAppTheme, radii, shadows } from '../../utils/theme';
 import { getSubjectsForClass } from '../../services/utils/Constants';
+import { useAppSelector } from '../../hooks/useAppSelector';
 
 type QuizFormProps = {
   onSubmit: (payload: {
@@ -56,9 +57,23 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
   const [durationPreset, setDurationPreset] = useState<'no-limit' | '2h' | '1d' | '3d' | '1w' | 'custom'>('no-limit');
   const [customExpiryDate, setCustomExpiryDate] = useState<Date | null>(null);
   
+  const user = useAppSelector((state) => state.auth.user);
+  const teacherAssignedSubjects = useMemo(() => {
+    if (user?.role === 'teacher' && Array.isArray(user.teachingSubjects) && user.teachingSubjects.length > 0) {
+      return user.teachingSubjects;
+    }
+    return [];
+  }, [user]);
+
   const [error, setError] = useState('');
   const selectedClassLevel = [8, 9, 10].includes(Number(classLevel)) ? (Number(classLevel) as 8 | 9 | 10) : 10;
-  const subjectPresets = getSubjectsForClass(selectedClassLevel);
+  const classSubjectPresets = getSubjectsForClass(selectedClassLevel);
+
+  useEffect(() => {
+    if (!subject && teacherAssignedSubjects.length > 0) {
+      setSubject(teacherAssignedSubjects[0]);
+    }
+  }, [teacherAssignedSubjects]);
 
   const applyTemplate = (template: 'quick-test' | 'exam-mode') => {
     if (template === 'quick-test') {
@@ -250,8 +265,42 @@ export function QuizForm({ onSubmit }: QuizFormProps) {
         <Text style={[styles.sectionTitle, { fontSize: fontSize.lg }, isDark && { color: '#FFFFFF' }]}>Basic Information</Text>
         <CustomInput value={title} onChangeText={setTitle} placeholder="e.g. Quadratic Equations Quiz" label="Quiz Title" />
         <CustomInput value={subject} onChangeText={setSubject} placeholder="e.g. Mathematics" label="Subject" />
+        {teacherAssignedSubjects.length > 0 && (
+          <View style={{ marginBottom: spacing.sm }}>
+            <Text style={[styles.fieldLabel, { fontSize: fontSize.xs, color: isDark ? '#a78bfa' : '#6366f1', fontWeight: '800', fontFamily: 'monospace', marginBottom: 6 }]}>
+              YOUR ASSIGNED TEACHING SUBJECTS
+            </Text>
+            <View style={[styles.row, { marginBottom: spacing.sm }]}>
+              {teacherAssignedSubjects.map((preset) => (
+                <Pressable
+                  key={`assigned-${preset}`}
+                  onPress={() => setSubject(preset)}
+                  style={[
+                    styles.chip,
+                    { borderColor: '#6366f1' },
+                    subject === preset
+                      ? { backgroundColor: '#6366f1' }
+                      : (isDark ? { backgroundColor: 'rgba(99, 102, 241, 0.15)' } : { backgroundColor: '#e0e7ff' })
+                  ]}
+                >
+                  <Text style={{
+                    color: subject === preset ? '#ffffff' : (isDark ? '#a5b4fc' : '#4338ca'),
+                    fontWeight: '800',
+                    fontSize: fontSize.xs,
+                  }}>
+                    {preset} [ASSIGNED]
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        <Text style={[styles.fieldLabel, { fontSize: fontSize.xs, color: isDark ? '#94a3b8' : '#64748b', fontWeight: '700', fontFamily: 'monospace', marginBottom: 6 }]}>
+          {teacherAssignedSubjects.length > 0 ? 'ALL CLASS SUBJECTS' : 'QUICK SELECT SUBJECT'}
+        </Text>
         <View style={[styles.row, { marginBottom: spacing.md }]}>
-          {subjectPresets.map((preset) => (
+          {classSubjectPresets.map((preset) => (
             <Pressable
               key={preset}
               onPress={() => setSubject(preset)}

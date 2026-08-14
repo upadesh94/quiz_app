@@ -1523,6 +1523,23 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
                   <TextInput placeholder="Quiz Title" value={quizTitle} onChangeText={setQuizTitle} placeholderTextColor={subTextColor} style={[styles.formInput, { color: textColor, borderColor }]} />
                   <TextInput placeholder="Subject" value={quizSubject} onChangeText={setQuizSubject} placeholderTextColor={subTextColor} style={[styles.formInput, { color: textColor, borderColor }]} />
                 </View>
+                {/* Subject Quick Selector */}
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {ALL_SUBJECT_OPTIONS.map((subj) => (
+                    <Pressable
+                      key={subj}
+                      onPress={() => setQuizSubject(subj)}
+                      style={[
+                        styles.classChip,
+                        quizSubject === subj && { backgroundColor: '#6366f1', borderColor: '#6366f1' },
+                      ]}
+                    >
+                      <Text style={{ color: quizSubject === subj ? '#ffffff' : subTextColor, fontSize: 10, fontWeight: '800', fontFamily: 'monospace' }}>
+                        {subj}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
                 <View style={[styles.formRow, { marginTop: 10 }]}>
                   <TextInput placeholder="Duration (min)" value={quizDuration} onChangeText={setQuizDuration} keyboardType="numeric" placeholderTextColor={subTextColor} style={[styles.formInput, { color: textColor, borderColor }]} />
                   <View style={{ flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center' }}>
