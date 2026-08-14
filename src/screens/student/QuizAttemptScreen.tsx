@@ -227,10 +227,11 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView
-      style={{ ...styles.container, backgroundColor: isDark ? '#160629' : colors.background, paddingHorizontal: containerPadding }}
-      contentContainerStyle={{ flexGrow: 1, paddingVertical: spacing.lg, paddingBottom: 100 }}
-    >
+    <View style={{ flex: 1, backgroundColor: isDark ? '#160629' : colors.background }}>
+      <ScrollView
+        style={{ flex: 1, paddingHorizontal: containerPadding }}
+        contentContainerStyle={{ flexGrow: 1, paddingVertical: spacing.lg, paddingBottom: 100 }}
+      >
       <View
         style={{
           maxWidth: isTablet ? 980 : '100%',
@@ -464,6 +465,7 @@ export function QuizAttemptScreen({ navigation, route }: Props) {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
 

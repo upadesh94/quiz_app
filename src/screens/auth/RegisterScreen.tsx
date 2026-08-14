@@ -21,6 +21,7 @@ export function RegisterScreen({ navigation, route }: Props) {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -30,7 +31,6 @@ export function RegisterScreen({ navigation, route }: Props) {
   const [parentName, setParentName] = useState('');
   const [parentMobileNumber, setParentMobileNumber] = useState('');
   const [rollNumber, setRollNumber] = useState('');
-  const [section, setSection] = useState('');
   const [admissionNumber, setAdmissionNumber] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('other');
@@ -64,6 +64,18 @@ export function RegisterScreen({ navigation, route }: Props) {
     setError('');
     setMessage('');
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter your password to confirm.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (mobileNumber.length !== 10 || !/^\d+$/.test(mobileNumber)) {
+      setError('Mobile number must be exactly 10 digits.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const result = await AuthService.register({
         username,
@@ -77,7 +89,6 @@ export function RegisterScreen({ navigation, route }: Props) {
         email,
         address,
         rollNumber,
-        section,
         admissionNumber,
         dateOfBirth,
         gender: gender as 'male' | 'female' | 'other',
@@ -117,7 +128,7 @@ export function RegisterScreen({ navigation, route }: Props) {
               color: isDark ? '#FFFFFF' : '#0f172a',
             }}
           >
-            📝 Create {isTeacher ? 'Teacher' : 'Student'} Account
+            Create {isTeacher ? 'Teacher' : 'Student'} Account
           </Text>
           <Text
             style={{
@@ -150,6 +161,13 @@ export function RegisterScreen({ navigation, route }: Props) {
             placeholder="Create password"
             secureTextEntry
           />
+          <CustomInput
+            label="Confirm Password *"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Re-enter password to confirm"
+            secureTextEntry
+          />
 
           {/* TEACHER SPECIFIC FIELDS */}
           {isTeacher ? (
@@ -175,7 +193,7 @@ export function RegisterScreen({ navigation, route }: Props) {
 
               {/* Multi-Class Teaching Selector */}
               <Text style={{ color: isDark ? '#d8b4fe' : '#0f172a', fontSize: fontSize.sm, fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs }}>
-                🎓 Classes You Teach (Select one or multiple classes):
+                Classes You Teach (Select one or multiple classes):
               </Text>
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                 {[8, 9, 10].map((cls) => {
@@ -213,7 +231,7 @@ export function RegisterScreen({ navigation, route }: Props) {
 
               {/* Multi-Subject Selection */}
               <Text style={{ color: isDark ? '#d8b4fe' : '#0f172a', fontSize: fontSize.sm, fontWeight: '700', marginBottom: spacing.xs }}>
-                📖 Subjects You Teach:
+                Subjects You Teach:
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md }}>
                 {ALL_SUBJECT_OPTIONS.map((subj) => {
@@ -254,12 +272,42 @@ export function RegisterScreen({ navigation, route }: Props) {
           {/* STUDENT SPECIFIC FIELDS */}
           {isStudent ? (
             <>
-              <CustomInput
-                label="Class *"
-                value={classLevel}
-                onChangeText={setClassLevel}
-                placeholder="Class (8/9/10)"
-              />
+              <Text style={{ color: isDark ? '#d8b4fe' : '#0f172a', fontSize: fontSize.sm, fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs }}>
+                🎓 Select Class *
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+                {[8, 9, 10].map((cls) => {
+                  const isSelected = classLevel === String(cls);
+                  return (
+                    <Pressable
+                      key={cls}
+                      onPress={() => setClassLevel(String(cls))}
+                      style={{
+                        flex: 1,
+                        paddingVertical: spacing.sm,
+                        alignItems: 'center',
+                        borderRadius: 14,
+                        borderWidth: 2,
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(168, 85, 247, 0.3)' : '#dbeafe')
+                          : (isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff'),
+                        borderColor: isSelected
+                          ? (isDark ? '#a855f7' : '#2563eb')
+                          : (isDark ? 'rgba(168, 85, 247, 0.3)' : '#cbd5e1'),
+                      }}
+                    >
+                      <Text style={{
+                        fontWeight: isSelected ? '800' : '600',
+                        color: isSelected
+                          ? (isDark ? '#ffffff' : '#1e40af')
+                          : (isDark ? '#94a3b8' : '#64748b')
+                      }}>
+                        {isSelected ? '✓ ' : ''}Class {cls}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
               <CustomInput
                 label="Mobile Number *"
                 value={mobileNumber}
@@ -282,12 +330,6 @@ export function RegisterScreen({ navigation, route }: Props) {
                 label="Roll Number"
                 value={rollNumber}
                 onChangeText={setRollNumber}
-                placeholder="Optional"
-              />
-              <CustomInput
-                label="Section"
-                value={section}
-                onChangeText={setSection}
                 placeholder="Optional"
               />
               <CustomInput

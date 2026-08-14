@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CustomCard } from '../../components/common/CustomCard';
 import { CustomInput } from '../../components/common/CustomInput';
 import { CustomButton } from '../../components/common/CustomButton';
-import { StudentPerformanceAnalytics, StudentRecord } from '../../types/models';
+import { PasswordResetRequest, StudentPerformanceAnalytics, StudentRecord, StudentRegistrationRequest } from '../../types/models';
 import { StudentService } from '../../services/teacher/StudentService';
+import { PasswordResetService } from '../../services/auth/PasswordResetService';
 import { ValidationUtils } from '../../services/utils/ValidationUtils';
 import { useResponsive, getGridColumns } from '../../utils/responsive';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { StudentRegistrationRequest } from '../../types/models';
 import { PerformanceService } from '../../services/analytics/PerformanceService';
 import { useAppTheme, radii } from '../../utils/theme';
 
@@ -33,6 +33,19 @@ export function ManageStudentsScreen() {
   const [classLevel, setClassLevel] = useState('8');
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [pendingRequests, setPendingRequests] = useState<StudentRegistrationRequest[]>([]);
+  const [pendingResetRequests, setPendingResetRequests] = useState<PasswordResetRequest[]>([]);
+  const [resetModalState, setResetModalState] = useState<{
+    visible: boolean;
+    request: PasswordResetRequest | null;
+    newPassword: string;
+    confirmPassword: string;
+  }>({
+    visible: false,
+    request: null,
+    newPassword: '',
+    confirmPassword: '',
+  });
+
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -44,12 +57,37 @@ export function ManageStudentsScreen() {
   const [selectedStudentAnalytics, setSelectedStudentAnalytics] = useState<StudentPerformanceAnalytics | null>(null);
 
   const loadStudents = async () => {
-    const [studentData, pendingData] = await Promise.all([
+    const [studentData, pendingData, resetData] = await Promise.all([
       StudentService.getStudentsByClass(),
       StudentService.getPendingRegistrationRequests(),
+      PasswordResetService.getPendingResetRequests('teacher'),
     ]);
     setStudents(studentData);
     setPendingRequests(pendingData);
+    setPendingResetRequests(resetData);
+  };
+
+  const handleResolveStudentReset = async () => {
+    if (!resetModalState.request || !resetModalState.newPassword.trim()) {
+      Alert.alert('Error', 'Please enter a valid new password.');
+      return;
+    }
+    if (resetModalState.newPassword !== resetModalState.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match. Please re-enter the password to confirm.');
+      return;
+    }
+    try {
+      await PasswordResetService.resolvePasswordReset(
+        resetModalState.request.id,
+        resetModalState.newPassword,
+        user?.username || 'Teacher'
+      );
+      Alert.alert('Success', `Password for student @${resetModalState.request.username} updated successfully.`);
+      setResetModalState({ visible: false, request: null, newPassword: '', confirmPassword: '' });
+      loadStudents();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to update student password.');
+    }
   };
 
   useEffect(() => {
@@ -281,6 +319,35 @@ export function ManageStudentsScreen() {
         >
           👥 Manage Students
         </Text>
+
+        {/* STUDENT PASSWORD RESET NOTIFICATIONS */}
+        {pendingResetRequests.length > 0 && (
+          <CustomCard style={{ backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : '#fef2f2', borderColor: '#ef4444', borderWidth: 2, marginBottom: spacing.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ fontSize: fontSize.base, fontWeight: '800', color: '#ef4444', fontFamily: 'monospace' }}>
+                STUDENT PASSWORD RESET REQUESTS ({pendingResetRequests.length})
+              </Text>
+            </View>
+            <View style={{ gap: 10 }}>
+              {pendingResetRequests.map((req) => (
+                <View key={req.id} style={{ flexDirection: isTablet ? 'row' : 'column', justifyContent: 'space-between', alignItems: isTablet ? 'center' : 'stretch', backgroundColor: isDark ? '#0f172a' : '#ffffff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#ef4444' }}>
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: isDark ? '#f8fafc' : '#0f172a' }}>{req.fullName} (@{req.username})</Text>
+                    <Text style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#64748b', fontFamily: 'monospace' }}>
+                      CLASS {req.classLevel || 8} • REQUESTED: {new Date(req.requestedAt).toLocaleString()}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setResetModalState({ visible: true, request: req, newPassword: '', confirmPassword: '' })}
+                    style={{ backgroundColor: '#ef4444', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, marginTop: isTablet ? 0 : 8, alignItems: 'center' }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Reset Password</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          </CustomCard>
+        )}
 
         <CustomCard>
           <Text style={{ fontSize: fontSize.lg, fontWeight: '700', marginBottom: spacing.md, color: isDark ? '#FFFFFF' : colors.textPrimary }}>
@@ -601,10 +668,74 @@ export function ManageStudentsScreen() {
 
         <CustomCard>
           <Text style={{ fontSize: fontSize.sm, color: isDark ? '#cbd5e1' : '#334155', lineHeight: fontSize.sm * 1.5 }}>
-            📝 Note: Password is stored as initial profile data for onboarding. Production apps should create auth credentials using Firebase Admin/Cloud Functions and never store plain text passwords.
+            Note: Password reset requests submitted by students are routed here to the assigned Teacher for security approval and instant credential updates.
           </Text>
         </CustomCard>
       </View>
+
+      {/* TEACHER RESET STUDENT PASSWORD MODAL */}
+      <Modal visible={resetModalState.visible} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+          <View style={{ width: '100%', maxWidth: 440, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderRadius: 20, padding: 20, borderWidth: 2, borderColor: '#ef4444' }}>
+            <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#ffffff' : '#0f172a', fontFamily: 'monospace', marginBottom: 6 }}>
+              Reset Student Password (@{resetModalState.request?.username})
+            </Text>
+            <Text style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', fontFamily: 'monospace', marginBottom: 14 }}>
+              Enter a new initial password for student {resetModalState.request?.fullName} (Class {resetModalState.request?.classLevel || 8}).
+            </Text>
+            <TextInput
+              placeholder="Enter new password (min 4 chars)"
+              value={resetModalState.newPassword}
+              onChangeText={(val) => setResetModalState((prev) => ({ ...prev, newPassword: val }))}
+              placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+              secureTextEntry
+              style={{
+                height: 44,
+                backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                color: isDark ? '#ffffff' : '#0f172a',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: isDark ? '#334155' : '#cbd5e1',
+                paddingHorizontal: 12,
+                fontSize: 13,
+                marginBottom: 10,
+              }}
+            />
+            <TextInput
+              placeholder="Confirm new password"
+              value={resetModalState.confirmPassword}
+              onChangeText={(val) => setResetModalState((prev) => ({ ...prev, confirmPassword: val }))}
+              placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+              secureTextEntry
+              style={{
+                height: 44,
+                backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                color: isDark ? '#ffffff' : '#0f172a',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: isDark ? '#334155' : '#cbd5e1',
+                paddingHorizontal: 12,
+                fontSize: 13,
+                marginBottom: 16,
+              }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
+              <Pressable
+                onPress={() => setResetModalState({ visible: false, request: null, newPassword: '', confirmPassword: '' })}
+                style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9' }}
+              >
+                <Text style={{ color: isDark ? '#f8fafc' : '#0f172a', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleResolveStudentReset}
+                style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: '#10b981' }}
+              >
+                <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Update & Resolve</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

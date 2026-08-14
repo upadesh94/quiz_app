@@ -117,8 +117,8 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
     );
   };
 
-  return (
-    <ScrollView style={[styles.container, { backgroundColor: isDark ? '#160629' : '#f9fafb' }]} contentContainerStyle={{ paddingHorizontal: containerPadding, paddingBottom: 24 }}>
+  const renderHeader = () => (
+    <View style={{ paddingBottom: 16 }}>
       <View style={[styles.headerCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#eff6ff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#dbeafe' }]}>
         <Text
           style={{
@@ -135,7 +135,7 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
         </Text>
       </View>
 
-      <View style={[styles.filterCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#e2e8f0' }]}>
+      <View style={[styles.filterCard, { backgroundColor: isDark ? 'rgba(15, 10, 44, 0.88)' : '#ffffff', borderColor: isDark ? 'rgba(168, 85, 247, 0.5)' : '#e2e8f0', marginBottom: 0 }]}>
         <Text style={[styles.filterLabel, { fontSize: fontSize.sm, marginTop: spacing.md, color: isDark ? '#FFFFFF' : '#0f172a' }]}>Filter by Subject for Class {selectedClassLevel}</Text>
         <View style={styles.chipRow}>
           <Pressable
@@ -171,22 +171,29 @@ export function AvailableQuizzesScreen({ navigation }: Props) {
           ))}
         </View>
       </View>
+    </View>
+  );
 
-      {filteredQuizzes.length === 0 ? (
-        <Text style={{ fontSize: fontSize.base, color: isDark ? '#94a3b8' : '#666', marginTop: spacing.xl }}>
-          No quizzes available for Class {selectedClassLevel}{selectedSubject !== 'all' ? ` / ${selectedSubject}` : ''}.
-        </Text>
-      ) : (
-        <FlatList
-          data={filteredQuizzes}
-          renderItem={renderQuizCard}
-          keyExtractor={(item) => item.id}
-          numColumns={numColumns}
-          scrollEnabled={false}
-          columnWrapperStyle={numColumns > 1 ? { gap: spacing.sm } : undefined}
-        />
-      )}
-    </ScrollView>
+  const renderEmpty = () => (
+    <Text style={{ fontSize: fontSize.base, color: isDark ? '#94a3b8' : '#666', marginTop: spacing.xl, textAlign: 'center' }}>
+      No quizzes available for Class {selectedClassLevel}{selectedSubject !== 'all' ? ` / ${selectedSubject}` : ''}.
+    </Text>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: isDark ? '#160629' : '#f9fafb' }}>
+      <FlatList
+        data={filteredQuizzes}
+        renderItem={renderQuizCard}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={{ paddingHorizontal: containerPadding, paddingBottom: 100, paddingTop: 16 }}
+        columnWrapperStyle={numColumns > 1 ? { gap: spacing.sm } : undefined}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 

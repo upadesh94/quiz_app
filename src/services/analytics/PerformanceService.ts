@@ -217,16 +217,29 @@ function applyTeacherFilters(attempts: AttemptDoc[], filters: TeacherAnalyticsFi
       return false;
     }
 
-    if (filters.studentId && attempt.studentId !== filters.studentId) {
+    if (filters.studentId && filters.studentId !== 'all' && attempt.studentId !== filters.studentId) {
       return false;
     }
 
-    if (filters.subject && attempt.subject !== filters.subject) {
+    if (filters.subject && filters.subject !== 'all' && attempt.subject !== filters.subject) {
       return false;
     }
 
-    if (filters.quizId && attempt.quizId !== filters.quizId) {
+    if (filters.quizId && filters.quizId !== 'all' && attempt.quizId !== filters.quizId) {
       return false;
+    }
+
+    if (filters.searchQuery) {
+      const q = filters.searchQuery.trim().toLowerCase();
+      if (q) {
+        const studentNameMatch = (attempt.studentName || '').toLowerCase().includes(q);
+        const studentIdMatch = (attempt.studentId || '').toLowerCase().includes(q);
+        const quizTitleMatch = (attempt.quizTitle || '').toLowerCase().includes(q);
+        const subjectMatch = (attempt.subject || '').toLowerCase().includes(q);
+        if (!studentNameMatch && !studentIdMatch && !quizTitleMatch && !subjectMatch) {
+          return false;
+        }
+      }
     }
 
     if (filters.resultType === 'passed' && !attempt.passed) {
@@ -460,7 +473,7 @@ export class PerformanceService {
       passFailPie: toPassFailPie(filtered),
       classPerformance: toClassPerformance(filtered),
       studentOptions: Object.values(studentMap),
-      subjectOptions: Array.from(new Set(filtered.map((item) => item.subject).filter(Boolean))).sort(),
+      subjectOptions: Array.from(new Set(allAttempts.map((item) => item.subject).filter(Boolean))).sort(),
       quizOptions: Object.values(quizMap),
       weakestSubject: subjectAnalytics[subjectAnalytics.length - 1]?.subject,
       strongestSubject: subjectAnalytics[0]?.subject,

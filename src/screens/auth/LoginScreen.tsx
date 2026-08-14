@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BrandLogo } from '../../components/common/BrandLogo';
+import { CustomInput } from '../../components/common/CustomInput';
 import { RootStackParamList } from '../../navigation/types';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { setAuth } from '../../store/slices/authSlice';
@@ -24,11 +25,9 @@ export function LoginScreen({ navigation, route }: Props) {
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const demoCredentials = AuthService.getDemoCredentials();
   const isFormValid = username.trim().length > 0 && password.trim().length > 0;
 
   const onLogin = async () => {
@@ -57,17 +56,6 @@ export function LoginScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleDemoFill = (role: 'student' | 'teacher') => {
-    setActiveRole(role);
-    if (role === 'student') {
-      setUsername(demoCredentials.student.username);
-      setPassword(demoCredentials.student.password);
-    } else {
-      setUsername(demoCredentials.teacher.username);
-      setPassword(demoCredentials.teacher.password);
-    }
-  };
-
   return (
     <ScrollView
       style={styles.screen}
@@ -76,7 +64,7 @@ export function LoginScreen({ navigation, route }: Props) {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.background, { backgroundColor: isDark ? '#090514' : colors.background }]}>
-        {/* Subtle Ambient Background Lighting */}
+        {/* Ambient Background Lighting */}
         <View style={styles.topGlow} />
         <View style={styles.bottomGlow} />
 
@@ -88,25 +76,24 @@ export function LoginScreen({ navigation, route }: Props) {
               <BrandLogo size={isTablet ? 150 : 130} />
             </View>
 
-            {/* Modern Classic Glassmorphism Card */}
+            {/* Theme-Aligned Card */}
             <View
               style={[
                 styles.card,
                 {
-                  backgroundColor: isDark ? 'rgba(15, 10, 44, 0.85)' : '#ffffff',
-                  borderColor: isDark ? 'rgba(168, 85, 247, 0.35)' : '#e2e8f0',
+                  backgroundColor: isDark ? '#0f0a2c' : '#ffffff',
+                  borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : colors.border,
                 },
               ]}
             >
-              {/* Modern Segmented Role Switcher */}
-              <View style={[styles.tabSegmentBg, { backgroundColor: isDark ? '#1e1644' : '#f1f5f9' }]}>
+              {/* Segmented Role Switcher */}
+              <View style={[styles.tabSegmentBg, { backgroundColor: isDark ? '#1e1644' : '#e2e8f0' }]}>
                 <Pressable
                   style={[
                     styles.tabSegmentItem,
-                    activeRole === 'student' && [
-                      styles.tabSegmentActive,
-                      { backgroundColor: isDark ? '#6366f1' : '#ffffff' },
-                    ],
+                    activeRole === 'student'
+                      ? [styles.tabSegmentActive, { backgroundColor: '#6366f1' }]
+                      : { backgroundColor: 'transparent' },
                   ]}
                   onPress={() => {
                     setActiveRole('student');
@@ -116,20 +103,19 @@ export function LoginScreen({ navigation, route }: Props) {
                   <Text
                     style={[
                       styles.tabSegmentText,
-                      { color: activeRole === 'student' ? (isDark ? '#FFFFFF' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b') },
+                      { color: activeRole === 'student' ? '#ffffff' : (isDark ? '#a5b4fc' : '#475569') },
                     ]}
                   >
-                    🎓 Student
+                    Student
                   </Text>
                 </Pressable>
 
                 <Pressable
                   style={[
                     styles.tabSegmentItem,
-                    activeRole === 'teacher' && [
-                      styles.tabSegmentActive,
-                      { backgroundColor: isDark ? '#a855f7' : '#ffffff' },
-                    ],
+                    activeRole === 'teacher'
+                      ? [styles.tabSegmentActive, { backgroundColor: '#8b5cf6' }]
+                      : { backgroundColor: 'transparent' },
                   ]}
                   onPress={() => {
                     setActiveRole('teacher');
@@ -139,10 +125,10 @@ export function LoginScreen({ navigation, route }: Props) {
                   <Text
                     style={[
                       styles.tabSegmentText,
-                      { color: activeRole === 'teacher' ? (isDark ? '#FFFFFF' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b') },
+                      { color: activeRole === 'teacher' ? '#ffffff' : (isDark ? '#a5b4fc' : '#475569') },
                     ]}
                   >
-                    👩‍🏫 Teacher
+                    Teacher
                   </Text>
                 </Pressable>
               </View>
@@ -152,50 +138,27 @@ export function LoginScreen({ navigation, route }: Props) {
                 Welcome Back
               </Text>
               <Text style={[styles.subtitle, { fontSize: fontSize.sm }, { color: isDark ? '#94a3b8' : '#64748b' }]}>
-                Log in as {activeRole === 'student' ? 'Student' : 'Teacher'} to access your dashboard
+                Log in as {activeRole === 'student' ? 'Student' : 'Teacher'} to access your portal
               </Text>
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              {/* Email / Username Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: isDark ? '#cbd5e1' : '#334155' }]}>Username or Email</Text>
-                <View style={[styles.inputRow, { backgroundColor: isDark ? '#191136' : '#f8fafc', borderColor: isDark ? 'rgba(168, 85, 247, 0.25)' : '#cbd5e1' }]}>
-                  <Text style={styles.inputIcon}>✉️</Text>
-                  <TextInput
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="e.g. student1 or teacher1"
-                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                    style={[styles.input, { color: isDark ? '#FFFFFF' : '#0f172a' }]}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
+              {/* Theme-Aligned Input Fields */}
+              <View style={{ gap: 14, marginBottom: 16 }}>
+                <CustomInput
+                  label="Username or Email"
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="Enter your username or email"
+                />
 
-              {/* Password Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: isDark ? '#cbd5e1' : '#334155' }]}>Password</Text>
-                <View style={[styles.inputRow, { backgroundColor: isDark ? '#191136' : '#f8fafc', borderColor: isDark ? 'rgba(168, 85, 247, 0.25)' : '#cbd5e1' }]}>
-                  <Text style={styles.inputIcon}>🔒</Text>
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-                    style={[styles.input, { color: isDark ? '#FFFFFF' : '#0f172a' }]}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword((curr) => !curr)}
-                    style={styles.eyeBtn}
-                  >
-                    <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
-                  </Pressable>
-                </View>
+                <CustomInput
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  secureTextEntry
+                />
               </View>
 
               {/* Login Button */}
@@ -212,13 +175,12 @@ export function LoginScreen({ navigation, route }: Props) {
                 <Text style={styles.primaryButtonText}>
                   {isLoading ? 'LOGGING IN...' : `SIGN IN AS ${activeRole.toUpperCase()}`}
                 </Text>
-                <Text style={styles.primaryButtonArrow}>→</Text>
               </Pressable>
 
               {/* Auxiliary Links */}
               <View style={styles.linksRow}>
                 <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={[styles.linkText, { color: isDark ? '#a855f7' : '#6366f1' }]}>Forgot password?</Text>
+                  <Text style={[styles.linkText, { color: isDark ? '#818cf8' : '#6366f1' }]}>Forgot password?</Text>
                 </Pressable>
               </View>
 
@@ -228,13 +190,11 @@ export function LoginScreen({ navigation, route }: Props) {
                   Don’t have an account?{' '}
                 </Text>
                 <Pressable onPress={() => navigation.navigate('Register', { role: activeRole })}>
-                  <Text style={[styles.createAccountLink, { color: isDark ? '#d8b4fe' : '#6366f1' }]}>
+                  <Text style={[styles.createAccountLink, { color: isDark ? '#818cf8' : '#6366f1' }]}>
                     Create Account
                   </Text>
                 </Pressable>
               </View>
-
-
             </View>
           </View>
         </View>
@@ -329,34 +289,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    fontSize: 16,
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    paddingVertical: 0,
-  },
-  eyeBtn: {
-    padding: 8,
-  },
   primaryButton: {
     height: 54,
     borderRadius: 16,
@@ -379,12 +311,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  primaryButtonArrow: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-    marginLeft: 8,
-  },
   linksRow: {
     alignItems: 'center',
     marginBottom: 16,
@@ -397,38 +323,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   createAccountLink: {
     fontSize: 14,
-    fontWeight: '800',
-  },
-  demoSection: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(148, 163, 184, 0.15)',
-    paddingTop: 16,
-    alignItems: 'center',
-  },
-  demoSectionLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
-  demoRow: {
-    flexDirection: 'row',
-    gap: 10,
-    width: '100%',
-  },
-  demoPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  demoPillText: {
-    fontSize: 12,
     fontWeight: '800',
   },
 });

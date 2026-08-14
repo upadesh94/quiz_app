@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, Modal } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -10,6 +10,8 @@ import { DataTable } from '../../components/common/DataTable';
 import { CustomButton } from '../../components/common/CustomButton';
 import { Badge } from '../../components/common/Badge';
 import { addDocument, getCollection, updateDocument, deleteDocument } from '../../firebase/firestore';
+import { PasswordResetService } from '../../services/auth/PasswordResetService';
+import { PasswordResetRequest } from '../../types/models';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SuperAdminDashboard'>;
 
@@ -21,6 +23,8 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const { fontSize, spacing, containerPadding, isTablet, isDesktop } = useResponsive();
   const { colors, isDark } = useAppTheme();
+  
+  const cardWidth = isDesktop ? '23.8%' : isTablet ? '48.5%' : '100%';
   
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   
@@ -44,13 +48,143 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
   const [attemptsList, setAttemptsList] = useState<any[]>([]);
   const [sessionLogs, setSessionLogs] = useState<any[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<'users' | 'quizzes' | 'attempts'>('users');
+  const [inspectDoc, setInspectDoc] = useState<any | null>(null);
+
+  // View Modes & Filters for Admin Sections
+  const [teacherViewMode, setTeacherViewMode] = useState<'cards' | 'table'>('cards');
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
+  const [studentViewMode, setStudentViewMode] = useState<'cards' | 'table'>('cards');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [sessionViewMode, setSessionViewMode] = useState<'cards' | 'table'>('cards');
+  const [sessionSearchQuery, setSessionSearchQuery] = useState('');
+  const [quizViewMode, setQuizViewMode] = useState<'cards' | 'table'>('cards');
+  const [quizSearchQuery, setQuizSearchQuery] = useState('');
+  const [attemptViewMode, setAttemptViewMode] = useState<'cards' | 'table'>('cards');
+  const [attemptSearchQuery, setAttemptSearchQuery] = useState('');
+  const [dbViewMode, setDbViewMode] = useState<'cards' | 'table'>('cards');
+  const [dbSearchQuery, setDbSearchQuery] = useState('');
+  const [isEditingJson, setIsEditingJson] = useState(false);
+  const [editJsonText, setEditJsonText] = useState('');
+
+  // Password Reset Notifications State
+  const [pendingResetRequests, setPendingResetRequests] = useState<PasswordResetRequest[]>([]);
+  const [resetModalState, setResetModalState] = useState<{
+    visible: boolean;
+    request: PasswordResetRequest | null;
+    newPassword: string;
+    confirmPassword: string;
+  }>({
+    visible: false,
+    request: null,
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Confirmation Modal State
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const filteredTeachersList = useMemo(() => {
+    const q = teacherSearchQuery.trim().toLowerCase();
+    if (!q) return teachersList;
+    return teachersList.filter(
+      (item) =>
+        (item.fullName || '').toLowerCase().includes(q) ||
+        (item.username || '').toLowerCase().includes(q) ||
+        (item.qualification || '').toLowerCase().includes(q) ||
+        (item.email || '').toLowerCase().includes(q) ||
+        (item.mobileNumber || '').toLowerCase().includes(q)
+    );
+  }, [teachersList, teacherSearchQuery]);
+
+  const filteredStudentsList = useMemo(() => {
+    const q = studentSearchQuery.trim().toLowerCase();
+    if (!q) return studentsList;
+    return studentsList.filter(
+      (item) =>
+        (item.fullName || '').toLowerCase().includes(q) ||
+        (item.username || '').toLowerCase().includes(q) ||
+        (item.rollNumber || '').toLowerCase().includes(q) ||
+        (item.parentName || '').toLowerCase().includes(q) ||
+        (item.mobileNumber || '').toLowerCase().includes(q)
+    );
+  }, [studentsList, studentSearchQuery]);
+
+  const filteredSessionsList = useMemo(() => {
+    const q = sessionSearchQuery.trim().toLowerCase();
+    if (!q) return sessionLogs;
+    return sessionLogs.filter(
+      (item) =>
+        (item.fullName || '').toLowerCase().includes(q) ||
+        (item.username || '').toLowerCase().includes(q) ||
+        (item.role || '').toLowerCase().includes(q)
+    );
+  }, [sessionLogs, sessionSearchQuery]);
+
+  const filteredQuizzesList = useMemo(() => {
+    const q = quizSearchQuery.trim().toLowerCase();
+    if (!q) return quizzesList;
+    return quizzesList.filter(
+      (item) =>
+        (item.title || '').toLowerCase().includes(q) ||
+        (item.subject || '').toLowerCase().includes(q) ||
+        String(item.classLevel || '').includes(q)
+    );
+  }, [quizzesList, quizSearchQuery]);
+
+  const filteredAttemptsList = useMemo(() => {
+    const q = attemptSearchQuery.trim().toLowerCase();
+    if (!q) return attemptsList;
+    return attemptsList.filter(
+      (item) =>
+        (item.studentName || '').toLowerCase().includes(q) ||
+        (item.studentId || '').toLowerCase().includes(q) ||
+        (item.quizTitle || '').toLowerCase().includes(q) ||
+        (item.subject || '').toLowerCase().includes(q)
+    );
+  }, [attemptsList, attemptSearchQuery]);
+
+  const currentDbCollection = selectedCollection === 'users' ? usersList : selectedCollection === 'quizzes' ? quizzesList : attemptsList;
+
+  const filteredDbList = useMemo(() => {
+    const q = dbSearchQuery.trim().toLowerCase();
+    if (!q) return currentDbCollection;
+    return currentDbCollection.filter((doc) => {
+      const docStr = JSON.stringify(doc).toLowerCase();
+      return docStr.includes(q);
+    });
+  }, [currentDbCollection, dbSearchQuery]);
+
+  const activeInspectDoc = inspectDoc || filteredDbList[0];
+
+  const handleSaveJson = async () => {
+    if (!activeInspectDoc) return;
+    try {
+      const parsed = JSON.parse(editJsonText);
+      await updateDocument(selectedCollection, activeInspectDoc.id, parsed);
+      Alert.alert('Document Saved', `Document ${activeInspectDoc.id} updated in collection '${selectedCollection}'.`);
+      setInspectDoc(parsed);
+      setIsEditingJson(false);
+      loadDashboardData();
+    } catch (e: any) {
+      Alert.alert('JSON Parse Error', e?.message || 'Invalid JSON format.');
+    }
+  };
 
   // Modals & Creation Forms
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showAddQuiz, setShowAddQuiz] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [inspectDoc, setInspectDoc] = useState<any | null>(null);
 
   // Form Fields
   const [teacherName, setTeacherName] = useState('');
@@ -98,6 +232,9 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
       const users = await getCollection('users');
       const quizzes = await getCollection('quizzes');
       const attempts = await getCollection('attempts');
+      const resetRequests = await PasswordResetService.getPendingResetRequests('admin');
+
+      setPendingResetRequests(resetRequests);
 
       const allUsers = users.length > 0 ? users : [
         { id: 'usr-1', username: 'teacher_demo', fullName: 'Demo Teacher', role: 'teacher', initialPassword: 'teacher123', assignedClasses: [8, 9, 10], teachingSubjects: ['Mathematics', 'Science'], qualification: 'M.Sc Physics, B.Ed', isActive: true, lastLogin: new Date().toISOString() },
@@ -140,6 +277,29 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
       setSystemLoad(Math.floor(Math.random() * 8) + 12);
     } catch (err) {
       console.error('Error loading admin data:', err);
+    }
+  };
+
+  const handleResolveResetRequest = async () => {
+    if (!resetModalState.request || !resetModalState.newPassword.trim()) {
+      Alert.alert('Error', 'Please enter a valid new password.');
+      return;
+    }
+    if (resetModalState.newPassword !== resetModalState.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match. Please re-enter the password to confirm.');
+      return;
+    }
+    try {
+      await PasswordResetService.resolvePasswordReset(
+        resetModalState.request.id,
+        resetModalState.newPassword,
+        'SuperAdmin'
+      );
+      Alert.alert('Success', `Password for @${resetModalState.request.username} has been updated.`);
+      setResetModalState({ visible: false, request: null, newPassword: '', confirmPassword: '' });
+      loadDashboardData();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to reset password.');
     }
   };
 
@@ -347,33 +507,29 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
     }
   };
 
-  const handleDeleteUser = async (user: any) => {
-    Alert.alert(
-      'Permanent User Deletion',
-      `Are you sure you want to delete user account "${user.username}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Account',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (user.id && !user.id.startsWith('usr-')) {
-                await deleteDocument('users', user.id);
-              }
-              setAuditLogs((prev) => [
-                { id: String(Date.now()), event: `[USER_PURGE] Deleted Account: ${user.username}`, timestamp: new Date().toISOString(), level: 'danger' },
-                ...prev,
-              ]);
-              setEditingUser(null);
-              loadDashboardData();
-            } catch (e) {
-              console.error('Delete error:', e);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteUser = (user: any) => {
+    const userNameLabel = user.fullName || user.username || 'User Account';
+    setConfirmDeleteModal({
+      visible: true,
+      title: 'Confirm Account Deletion',
+      message: `Are you sure you want to permanently delete user account "${userNameLabel}" (@${user.username})? All user credentials and access will be permanently purged.`,
+      onConfirm: async () => {
+        try {
+          if (user.id && !user.id.startsWith('usr-')) {
+            await deleteDocument('users', user.id);
+          }
+          setAuditLogs((prev) => [
+            { id: String(Date.now()), event: `[USER_PURGE] Deleted Account: ${user.username}`, timestamp: new Date().toISOString(), level: 'danger' },
+            ...prev,
+          ]);
+          setEditingUser(null);
+          loadDashboardData();
+        } catch (e) {
+          console.error('Delete error:', e);
+        }
+        setConfirmDeleteModal((prev) => ({ ...prev, visible: false }));
+      },
+    });
   };
 
   const toggleQuizStatus = async (quiz: any) => {
@@ -392,19 +548,50 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
     }
   };
 
-  const handleDeleteQuiz = async (quiz: any) => {
-    try {
-      if (quiz.id && !quiz.id.startsWith('quiz-')) {
-        await deleteDocument('quizzes', quiz.id);
-      }
-      setAuditLogs((prev) => [
-        { id: String(Date.now()), event: `[QUIZ_PURGE] Deleted Quiz: ${quiz.title}`, timestamp: new Date().toISOString(), level: 'danger' },
-        ...prev,
-      ]);
-      loadDashboardData();
-    } catch (e) {
-      console.error('Delete quiz error:', e);
-    }
+  const handleDeleteQuiz = (quiz: any) => {
+    setConfirmDeleteModal({
+      visible: true,
+      title: 'Confirm Quiz Deletion',
+      message: `Are you sure you want to permanently delete the quiz "${quiz.title}" (Subject: ${quiz.subject || 'General'})? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          if (quiz.id && !quiz.id.startsWith('quiz-')) {
+            await deleteDocument('quizzes', quiz.id);
+          }
+          setAuditLogs((prev) => [
+            { id: String(Date.now()), event: `[QUIZ_PURGE] Deleted Quiz: ${quiz.title}`, timestamp: new Date().toISOString(), level: 'danger' },
+            ...prev,
+          ]);
+          loadDashboardData();
+        } catch (e) {
+          console.error('Delete quiz error:', e);
+        }
+        setConfirmDeleteModal((prev) => ({ ...prev, visible: false }));
+      },
+    });
+  };
+
+  const handleDeleteDbDocument = (doc: any) => {
+    if (!doc) return;
+    setConfirmDeleteModal({
+      visible: true,
+      title: `Confirm Delete Document from '${selectedCollection}'`,
+      message: `Are you sure you want to permanently delete document "${doc.id}" from collection '${selectedCollection}'?`,
+      onConfirm: async () => {
+        try {
+          await deleteDocument(selectedCollection, doc.id);
+          setInspectDoc(null);
+          setAuditLogs((prev) => [
+            { id: String(Date.now()), event: `[DB_PURGE] Deleted Document: ${doc.id} from collection '${selectedCollection}'`, timestamp: new Date().toISOString(), level: 'danger' },
+            ...prev,
+          ]);
+          loadDashboardData();
+        } catch (e) {
+          console.error('Delete DB document error:', e);
+        }
+        setConfirmDeleteModal((prev) => ({ ...prev, visible: false }));
+      },
+    });
   };
 
   const toggleUserStatus = async (user: any) => {
@@ -531,6 +718,38 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         {/* TAB 1: OVERVIEW DASHBOARD */}
         {activeTab === 'overview' && (
           <View style={{ gap: spacing.md }}>
+            
+            {/* PENDING TEACHER PASSWORD RESET NOTIFICATIONS */}
+            {pendingResetRequests.length > 0 && (
+              <View style={[styles.contentCard, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2', borderColor: '#ef4444', borderWidth: 2, marginBottom: spacing.sm }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color: '#ef4444', fontFamily: 'monospace' }}>
+                    PASSWORD RESET NOTIFICATIONS ({pendingResetRequests.length})
+                  </Text>
+                  <Badge label="ACTION REQUIRED" variant="error" size="sm" />
+                </View>
+                <View style={{ gap: 10 }}>
+                  {pendingResetRequests.map((req) => (
+                    <View key={req.id} style={{ flexDirection: isTablet ? 'row' : 'column', justifyContent: 'space-between', alignItems: isTablet ? 'center' : 'stretch', backgroundColor: cardBg, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#ef4444' }}>
+                      <View>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: textColor }}>{req.fullName} (@{req.username})</Text>
+                        <Text style={{ fontSize: 11, color: subTextColor, fontFamily: 'monospace' }}>
+                          ROLE: {req.userRole.toUpperCase()} • REQUESTED: {new Date(req.requestedAt).toLocaleString()}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => setResetModalState({ visible: true, request: req, newPassword: '', confirmPassword: '' })}
+                        style={[styles.cardBtn, { backgroundColor: '#ef4444', marginTop: isTablet ? 0 : 8 }]}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Reset Password</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Metrics Grid */}
             <View style={[styles.metricsGrid, { flexDirection: isTablet ? 'row' : 'column' }]}>
               <View style={[styles.metricCard, { backgroundColor: cardBg, borderColor }]}>
                 <Text style={{ color: subTextColor, fontSize: 11, fontFamily: 'monospace', fontWeight: '700' }}>TOTAL ACCOUNTS</Text>
@@ -623,52 +842,154 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         {activeTab === 'sessions' && (
           <View style={{ gap: spacing.md }}>
             <View style={styles.tabHeaderRow}>
-              <Text style={[styles.cardHeading, { color: textColor }]}>Active Logged-In Sessions</Text>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Active Logged-In Sessions</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Real-time user session status & system activity tracking</Text>
+              </View>
               <CustomButton title="Refresh Sessions" onPress={loadDashboardData} variant="secondary" size="sm" fullWidth={false} />
             </View>
 
-            <DataTable
-              columns={[
-                { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
-                { key: 'fullName', title: 'Full Name', flex: 1 },
-                {
-                  key: 'role',
-                  title: 'Role',
-                  flex: 1,
-                  render: (item) => (
-                    <Badge
-                      label={item.role?.toUpperCase() || 'USER'}
-                      variant={item.role === 'superadmin' ? 'error' : item.role === 'teacher' ? 'info' : 'success'}
-                      size="sm"
-                    />
-                  ),
-                },
-                {
-                  key: 'isOnline',
-                  title: 'Status',
-                  flex: 1,
-                  render: (item) => (
-                    <Badge label={item.isOnline ? 'ONLINE' : 'OFFLINE'} variant={item.isOnline ? 'success' : 'info'} size="sm" />
-                  ),
-                },
-                { key: 'lastLogin', title: 'Last Activity', flex: 1.2, render: (item) => new Date(item.lastLogin).toLocaleString() },
-                {
-                  key: 'actions',
-                  title: 'Action',
-                  flex: 1.2,
-                  render: (item) => (
-                    <Pressable
-                      onPress={() => startEditingUser(usersList.find((u) => u.username === item.username) || item)}
-                      style={styles.actionBtnEdit}
-                    >
-                      <Text style={styles.btnTextText}>Edit Credentials</Text>
-                    </Pressable>
-                  ),
-                },
-              ]}
-              data={sessionLogs}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
+            {/* View Mode & Search Controls */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <TextInput
+                  placeholder="Filter sessions by name, username, role..."
+                  value={sessionSearchQuery}
+                  onChangeText={setSessionSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setSessionViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: sessionViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: sessionViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: sessionViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Grid View ]
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setSessionViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: sessionViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: sessionViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: sessionViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {sessionViewMode === 'cards' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs }}>
+                {filteredSessionsList.length === 0 ? (
+                  <Text style={{ color: subTextColor, textAlign: 'center', width: '100%', marginVertical: 20 }}>No active sessions match query.</Text>
+                ) : (
+                  filteredSessionsList.map((item: any, idx: number) => {
+                    const isSuper = item.role === 'superadmin';
+                    const isTeacher = item.role === 'teacher';
+                    const avatarCode = isSuper ? 'ADM' : isTeacher ? 'TCH' : 'STU';
+
+                    return (
+                      <View key={item.id || idx} style={[styles.entityCard, { backgroundColor: cardBg, borderColor, width: cardWidth }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: isSuper ? 'rgba(239, 68, 68, 0.15)' : isTeacher ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: isSuper ? '#ef4444' : isTeacher ? '#6366f1' : '#10b981' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '900', fontFamily: 'monospace', color: isSuper ? '#ef4444' : isTeacher ? '#6366f1' : '#10b981' }}>{avatarCode}</Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>{item.fullName || item.username}</Text>
+                              <Text style={{ fontSize: 12, color: '#6366f1', fontWeight: '700', fontFamily: 'monospace' }}>@{item.username}</Text>
+                            </View>
+                          </View>
+                          <Badge label={item.isOnline ? 'ONLINE' : 'OFFLINE'} variant={item.isOnline ? 'success' : 'info'} size="sm" />
+                        </View>
+
+                        <View style={styles.cardInfoDivider} />
+
+                        <View style={{ gap: 6, marginVertical: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>ROLE:</Text>
+                            <Badge
+                              label={item.role?.toUpperCase() || 'USER'}
+                              variant={isSuper ? 'error' : isTeacher ? 'info' : 'success'}
+                              size="sm"
+                            />
+                          </View>
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>
+                            LAST_ACTIVITY: <Text style={{ fontWeight: '700', color: textColor }}>{item.lastLogin ? new Date(item.lastLogin).toLocaleString() : 'Just now'}</Text>
+                          </Text>
+                        </View>
+
+                        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: borderColor }}>
+                          <Pressable
+                            onPress={() => startEditingUser(usersList.find((u) => u.username === item.username) || item)}
+                            style={[styles.cardBtn, { backgroundColor: '#4f46e5' }]}
+                          >
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Edit Credentials</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
+                  { key: 'fullName', title: 'Full Name', flex: 1 },
+                  {
+                    key: 'role',
+                    title: 'Role',
+                    flex: 1,
+                    render: (item) => (
+                      <Badge
+                        label={item.role?.toUpperCase() || 'USER'}
+                        variant={item.role === 'superadmin' ? 'error' : item.role === 'teacher' ? 'info' : 'success'}
+                        size="sm"
+                      />
+                    ),
+                  },
+                  {
+                    key: 'isOnline',
+                    title: 'Status',
+                    flex: 1,
+                    render: (item) => (
+                      <Badge label={item.isOnline ? 'ONLINE' : 'OFFLINE'} variant={item.isOnline ? 'success' : 'info'} size="sm" />
+                    ),
+                  },
+                  { key: 'lastLogin', title: 'Last Activity', flex: 1.2, render: (item) => new Date(item.lastLogin).toLocaleString() },
+                  {
+                    key: 'actions',
+                    title: 'Action',
+                    flex: 1.2,
+                    render: (item) => (
+                      <Pressable
+                        onPress={() => startEditingUser(usersList.find((u) => u.username === item.username) || item)}
+                        style={styles.actionBtnEdit}
+                      >
+                        <Text style={styles.btnTextText}>Edit Credentials</Text>
+                      </Pressable>
+                    ),
+                  },
+                ]}
+                data={filteredSessionsList}
+                keyExtractor={(item, idx) => item.id || String(idx)}
+              />
+            )}
           </View>
         )}
 
@@ -676,8 +997,54 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         {activeTab === 'teachers' && (
           <View style={{ gap: spacing.md }}>
             <View style={styles.tabHeaderRow}>
-              <Text style={[styles.cardHeading, { color: textColor }]}>Teacher Directory & Provisioning</Text>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Teacher Directory & Provisioning</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Manage faculty members, assigned classes & monitor account status</Text>
+              </View>
               <CustomButton title="+ Provision Teacher" onPress={() => setShowAddTeacher((v) => !v)} variant="primary" size="sm" fullWidth={false} />
+            </View>
+
+            {/* View Mode & Search Controls */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <TextInput
+                  placeholder="Filter teachers by name, username, qualification..."
+                  value={teacherSearchQuery}
+                  onChangeText={setTeacherSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setTeacherViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: teacherViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: teacherViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: teacherViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Cards Grid ]
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setTeacherViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: teacherViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: teacherViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: teacherViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
             {showAddTeacher && (
@@ -764,71 +1131,154 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
               </View>
             )}
 
-            <DataTable
-              columns={[
-                { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
-                { key: 'fullName', title: 'Full Name', flex: 1 },
-                {
-                  key: 'assignedClasses',
-                  title: 'Classes Taught',
-                  flex: 1.2,
-                  render: (item) => {
+            {teacherViewMode === 'cards' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs }}>
+                {filteredTeachersList.length === 0 ? (
+                  <Text style={{ color: subTextColor, textAlign: 'center', width: '100%', marginVertical: 20 }}>No teachers match search.</Text>
+                ) : (
+                  filteredTeachersList.map((item: any, idx: number) => {
                     const classes = item.assignedClasses || [8, 9, 10];
+                    const subjects = item.teachingSubjects || ['Mathematics', 'Science'];
+                    const isPending = item.isApproved === false;
+                    const isActive = item.isActive !== false;
+
                     return (
-                      <View style={{ flexDirection: 'row', gap: 4 }}>
-                        {classes.map((c: number) => (
-                          <Badge key={c} label={`Class ${c}`} variant="info" size="sm" />
-                        ))}
+                      <View key={item.id || idx} style={[styles.entityCard, { backgroundColor: cardBg, borderColor, width: cardWidth }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(99, 102, 241, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#6366f1' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: '#6366f1', fontFamily: 'monospace' }}>TCH</Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 16, fontWeight: '800', color: textColor }}>{item.fullName || item.username}</Text>
+                              <Text style={{ fontSize: 12, color: '#6366f1', fontWeight: '700', fontFamily: 'monospace' }}>@{item.username}</Text>
+                            </View>
+                          </View>
+                          <Pressable onPress={() => !isPending && toggleUserStatus(item)}>
+                            <Badge
+                              label={isPending ? 'PENDING' : isActive ? 'ACTIVE' : 'DISABLED'}
+                              variant={isPending ? 'warning' : isActive ? 'success' : 'warning'}
+                              size="sm"
+                            />
+                          </Pressable>
+                        </View>
+
+                        <View style={styles.cardInfoDivider} />
+
+                        <View style={{ gap: 6, marginVertical: 8 }}>
+                          {item.qualification ? (
+                            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>QUALIFICATION: <Text style={{ fontWeight: '700', color: textColor }}>{item.qualification}</Text></Text>
+                          ) : null}
+                          {item.email || item.mobileNumber ? (
+                            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>CONTACT: <Text style={{ fontWeight: '700', color: textColor }}>{item.mobileNumber || item.phone || item.email || '-'}</Text></Text>
+                          ) : null}
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>
+                            PASSWORD:{' '}
+                            <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text>
+                          </Text>
+                        </View>
+
+                        <View style={{ marginTop: 4, gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: subTextColor, fontFamily: 'monospace' }}>Classes:</Text>
+                            {classes.map((c: number) => (
+                              <Badge key={c} label={`Class ${c}`} variant="info" size="sm" />
+                            ))}
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: subTextColor, fontFamily: 'monospace' }}>Subjects:</Text>
+                            <Text style={{ fontSize: 11, color: textColor, fontWeight: '600' }}>{subjects.join(', ')}</Text>
+                          </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: borderColor }}>
+                          {isPending && (
+                            <Pressable onPress={() => approveTeacher(item)} style={[styles.cardBtn, { backgroundColor: '#10b981' }]}>
+                              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Approve</Text>
+                            </Pressable>
+                          )}
+                          <Pressable onPress={() => startEditingUser(item)} style={[styles.cardBtn, { backgroundColor: '#4f46e5' }]}>
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Edit</Text>
+                          </Pressable>
+                          <Pressable onPress={() => toggleUserStatus(item)} style={[styles.cardBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9' }]}>
+                            <Text style={{ color: textColor, fontWeight: '700', fontSize: 12, fontFamily: 'monospace' }}>{isActive ? 'Disable' : 'Enable'}</Text>
+                          </Pressable>
+                          <Pressable onPress={() => handleDeleteUser(item)} style={[styles.cardBtn, { backgroundColor: '#ef4444' }]}>
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Delete</Text>
+                          </Pressable>
+                        </View>
                       </View>
                     );
+                  })
+                )}
+              </View>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
+                  { key: 'fullName', title: 'Full Name', flex: 1 },
+                  {
+                    key: 'assignedClasses',
+                    title: 'Classes Taught',
+                    flex: 1.2,
+                    render: (item) => {
+                      const classes = item.assignedClasses || [8, 9, 10];
+                      return (
+                        <View style={{ flexDirection: 'row', gap: 4 }}>
+                          {classes.map((c: number) => (
+                            <Badge key={c} label={`Class ${c}`} variant="info" size="sm" />
+                          ))}
+                        </View>
+                      );
+                    },
                   },
-                },
-                {
-                  key: 'teachingSubjects',
-                  title: 'Subjects',
-                  flex: 1.2,
-                  render: (item) => (item.teachingSubjects ? item.teachingSubjects.join(', ') : 'Mathematics, Science'),
-                },
-                { key: 'initialPassword', title: 'Password', flex: 0.9, render: (item) => <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text> },
-                {
-                  key: 'isActive',
-                  title: 'Status',
-                  flex: 0.9,
-                  render: (item) => {
-                    if (item.isApproved === false) {
-                      return <Badge label="PENDING" variant="warning" size="sm" />;
-                    }
-                    return (
-                      <Pressable onPress={() => toggleUserStatus(item)}>
-                        <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
-                      </Pressable>
-                    );
+                  {
+                    key: 'teachingSubjects',
+                    title: 'Subjects',
+                    flex: 1.2,
+                    render: (item) => (item.teachingSubjects ? item.teachingSubjects.join(', ') : 'Mathematics, Science'),
                   },
-                },
-                {
-                  key: 'actions',
-                  title: 'Actions',
-                  flex: 1.4,
-                  render: (item) => (
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {item.isApproved === false && (
-                        <Pressable onPress={() => approveTeacher(item)} style={[styles.actionBtnEdit, { backgroundColor: '#10b981' }]}>
-                          <Text style={[styles.btnTextText, { color: '#fff' }]}>Approve</Text>
+                  { key: 'initialPassword', title: 'Password', flex: 0.9, render: (item) => <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text> },
+                  {
+                    key: 'isActive',
+                    title: 'Status',
+                    flex: 0.9,
+                    render: (item) => {
+                      if (item.isApproved === false) {
+                        return <Badge label="PENDING" variant="warning" size="sm" />;
+                      }
+                      return (
+                        <Pressable onPress={() => toggleUserStatus(item)}>
+                          <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
                         </Pressable>
-                      )}
-                      <Pressable onPress={() => startEditingUser(item)} style={styles.actionBtnEdit}>
-                        <Text style={styles.btnTextText}>Edit</Text>
-                      </Pressable>
-                      <Pressable onPress={() => handleDeleteUser(item)} style={styles.actionBtnDel}>
-                        <Text style={styles.btnTextText}>Delete</Text>
-                      </Pressable>
-                    </View>
-                  ),
-                },
-              ]}
-              data={teachersList}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
+                      );
+                    },
+                  },
+                  {
+                    key: 'actions',
+                    title: 'Actions',
+                    flex: 1.4,
+                    render: (item) => (
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {item.isApproved === false && (
+                          <Pressable onPress={() => approveTeacher(item)} style={[styles.actionBtnEdit, { backgroundColor: '#10b981' }]}>
+                            <Text style={[styles.btnTextText, { color: '#fff' }]}>Approve</Text>
+                          </Pressable>
+                        )}
+                        <Pressable onPress={() => startEditingUser(item)} style={styles.actionBtnEdit}>
+                          <Text style={styles.btnTextText}>Edit</Text>
+                        </Pressable>
+                        <Pressable onPress={() => handleDeleteUser(item)} style={styles.actionBtnDel}>
+                          <Text style={styles.btnTextText}>Delete</Text>
+                        </Pressable>
+                      </View>
+                    ),
+                  },
+                ]}
+                data={filteredTeachersList}
+                keyExtractor={(item, idx) => item.id || String(idx)}
+              />
+            )}
           </View>
         )}
 
@@ -836,8 +1286,54 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         {activeTab === 'students' && (
           <View style={{ gap: spacing.md }}>
             <View style={styles.tabHeaderRow}>
-              <Text style={[styles.cardHeading, { color: textColor }]}>Student Directory & Enrollment</Text>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Student Directory & Enrollment</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Manage enrolled students, class levels & account credentials</Text>
+              </View>
               <CustomButton title="+ Enroll Student" onPress={() => setShowAddStudent((v) => !v)} variant="primary" size="sm" fullWidth={false} />
+            </View>
+
+            {/* View Mode & Search Controls */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <TextInput
+                  placeholder="Filter students by name, username, roll number..."
+                  value={studentSearchQuery}
+                  onChangeText={setStudentSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setStudentViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: studentViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: studentViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: studentViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Cards Grid ]
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setStudentViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: studentViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: studentViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: studentViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
             {showAddStudent && (
@@ -865,41 +1361,104 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
               </View>
             )}
 
-            <DataTable
-              columns={[
-                { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
-                { key: 'fullName', title: 'Full Name', flex: 1 },
-                { key: 'classLevel', title: 'Class', flex: 0.8, render: (item) => `Class ${item.classLevel || 8}` },
-                { key: 'initialPassword', title: 'Password', flex: 1, render: (item) => <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text> },
-                {
-                  key: 'isActive',
-                  title: 'Status',
-                  flex: 1,
-                  render: (item) => (
-                    <Pressable onPress={() => toggleUserStatus(item)}>
-                      <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
-                    </Pressable>
-                  ),
-                },
-                {
-                  key: 'actions',
-                  title: 'Actions',
-                  flex: 1.4,
-                  render: (item) => (
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <Pressable onPress={() => startEditingUser(item)} style={styles.actionBtnEdit}>
-                        <Text style={styles.btnTextText}>Edit</Text>
+            {studentViewMode === 'cards' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs }}>
+                {filteredStudentsList.length === 0 ? (
+                  <Text style={{ color: subTextColor, textAlign: 'center', width: '100%', marginVertical: 20 }}>No students match query.</Text>
+                ) : (
+                  filteredStudentsList.map((item: any, idx: number) => {
+                    const isActive = item.isActive !== false;
+
+                    return (
+                      <View key={item.id || idx} style={[styles.entityCard, { backgroundColor: cardBg, borderColor, width: cardWidth }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(16, 185, 129, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#10b981' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: '#10b981', fontFamily: 'monospace' }}>STU</Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 16, fontWeight: '800', color: textColor }}>{item.fullName || item.username}</Text>
+                              <Text style={{ fontSize: 12, color: '#10b981', fontWeight: '700', fontFamily: 'monospace' }}>@{item.username}</Text>
+                            </View>
+                          </View>
+                          <Pressable onPress={() => toggleUserStatus(item)}>
+                            <Badge
+                              label={isActive ? 'ACTIVE' : 'DISABLED'}
+                              variant={isActive ? 'success' : 'warning'}
+                              size="sm"
+                            />
+                          </Pressable>
+                        </View>
+
+                        <View style={styles.cardInfoDivider} />
+
+                        <View style={{ gap: 6, marginVertical: 8 }}>
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>CLASS: <Text style={{ fontWeight: '700', color: textColor }}>Class {item.classLevel || 8}</Text></Text>
+                          {item.rollNumber ? (
+                            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>ROLL_NO: <Text style={{ fontWeight: '700', color: textColor }}>{item.rollNumber}</Text></Text>
+                          ) : null}
+                          {item.mobileNumber || item.parentName ? (
+                            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>PARENT/CONTACT: <Text style={{ fontWeight: '700', color: textColor }}>{item.parentName ? `${item.parentName} (${item.parentMobileNumber || item.mobileNumber || '-'})` : (item.mobileNumber || '-')}</Text></Text>
+                          ) : null}
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>
+                            PASSWORD:{' '}
+                            <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text>
+                          </Text>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: borderColor }}>
+                          <Pressable onPress={() => startEditingUser(item)} style={[styles.cardBtn, { backgroundColor: '#4f46e5' }]}>
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Edit</Text>
+                          </Pressable>
+                          <Pressable onPress={() => toggleUserStatus(item)} style={[styles.cardBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9' }]}>
+                            <Text style={{ color: textColor, fontWeight: '700', fontSize: 12, fontFamily: 'monospace' }}>{isActive ? 'Disable' : 'Enable'}</Text>
+                          </Pressable>
+                          <Pressable onPress={() => handleDeleteUser(item)} style={[styles.cardBtn, { backgroundColor: '#ef4444' }]}>
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Delete</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'username', title: 'Username', flex: 1, render: (item) => <Text style={{ fontWeight: '800', color: '#6366f1', fontFamily: 'monospace' }}>{item.username}</Text> },
+                  { key: 'fullName', title: 'Full Name', flex: 1 },
+                  { key: 'classLevel', title: 'Class', flex: 0.8, render: (item) => `Class ${item.classLevel || 8}` },
+                  { key: 'initialPassword', title: 'Password', flex: 1, render: (item) => <Text style={{ color: '#10b981', fontWeight: '800', fontFamily: 'monospace' }}>{item.initialPassword || '******'}</Text> },
+                  {
+                    key: 'isActive',
+                    title: 'Status',
+                    flex: 1,
+                    render: (item) => (
+                      <Pressable onPress={() => toggleUserStatus(item)}>
+                        <Badge label={item.isActive !== false ? 'ACTIVE' : 'DISABLED'} variant={item.isActive !== false ? 'success' : 'warning'} size="sm" />
                       </Pressable>
-                      <Pressable onPress={() => handleDeleteUser(item)} style={styles.actionBtnDel}>
-                        <Text style={styles.btnTextText}>Delete</Text>
-                      </Pressable>
-                    </View>
-                  ),
-                },
-              ]}
-              data={studentsList}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
+                    ),
+                  },
+                  {
+                    key: 'actions',
+                    title: 'Actions',
+                    flex: 1.4,
+                    render: (item) => (
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <Pressable onPress={() => startEditingUser(item)} style={styles.actionBtnEdit}>
+                          <Text style={styles.btnTextText}>Edit</Text>
+                        </Pressable>
+                        <Pressable onPress={() => handleDeleteUser(item)} style={styles.actionBtnDel}>
+                          <Text style={styles.btnTextText}>Delete</Text>
+                        </Pressable>
+                      </View>
+                    ),
+                  },
+                ]}
+                data={filteredStudentsList}
+                keyExtractor={(item, idx) => item.id || String(idx)}
+              />
+            )}
           </View>
         )}
 
@@ -907,8 +1466,54 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         {activeTab === 'quizzes' && (
           <View style={{ gap: spacing.md }}>
             <View style={styles.tabHeaderRow}>
-              <Text style={[styles.cardHeading, { color: textColor }]}>Global Quiz Content Management</Text>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Global Quiz Content Management</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Create, publish, and manage quizzes across all classes</Text>
+              </View>
               <CustomButton title="+ Create Quiz" onPress={() => setShowAddQuiz((v) => !v)} variant="primary" size="sm" fullWidth={false} />
+            </View>
+
+            {/* View Mode & Search Controls */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <TextInput
+                  placeholder="Filter quizzes by title, subject, target class..."
+                  value={quizSearchQuery}
+                  onChangeText={setQuizSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setQuizViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: quizViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: quizViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: quizViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Cards Grid ]
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setQuizViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: quizViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: quizViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: quizViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
             {showAddQuiz && (
@@ -936,109 +1541,479 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
               </View>
             )}
 
-            <DataTable
-              columns={[
-                { key: 'title', title: 'Quiz Title', flex: 1.5, render: (item) => <Text style={{ color: textColor, fontWeight: '700' }}>{item.title}</Text> },
-                { key: 'subject', title: 'Subject', flex: 1 },
-                { key: 'classLevel', title: 'Class', flex: 0.8, render: (item) => `Class ${item.classLevel}` },
-                { key: 'timeLimitMinutes', title: 'Duration', flex: 0.8, render: (item) => `${item.timeLimitMinutes} min` },
-                {
-                  key: 'isPublished',
-                  title: 'Status',
-                  flex: 1,
-                  render: (item) => (
-                    <Pressable onPress={() => toggleQuizStatus(item)}>
-                      <Badge label={item.isPublished ? 'LIVE' : 'DRAFT'} variant={item.isPublished ? 'success' : 'info'} size="sm" />
-                    </Pressable>
-                  ),
-                },
-                {
-                  key: 'actions',
-                  title: 'Actions',
-                  flex: 1,
-                  render: (item) => (
-                    <Pressable onPress={() => handleDeleteQuiz(item)} style={styles.actionBtnDel}>
-                      <Text style={styles.btnTextText}>Delete</Text>
-                    </Pressable>
-                  ),
-                },
-              ]}
-              data={quizzesList}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
+            {quizViewMode === 'cards' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs }}>
+                {filteredQuizzesList.length === 0 ? (
+                  <Text style={{ color: subTextColor, textAlign: 'center', width: '100%', marginVertical: 20 }}>No quizzes match query.</Text>
+                ) : (
+                  filteredQuizzesList.map((item: any, idx: number) => {
+                    const isPublished = item.isPublished !== false;
+
+                    return (
+                      <View key={item.id || idx} style={[styles.entityCard, { backgroundColor: cardBg, borderColor, width: cardWidth }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(99, 102, 241, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#6366f1' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: '#6366f1', fontFamily: 'monospace' }}>QUIZ</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 16, fontWeight: '800', color: textColor }} numberOfLines={1}>{item.title}</Text>
+                              <Text style={{ fontSize: 12, color: '#6366f1', fontWeight: '700', fontFamily: 'monospace' }}>SUBJECT: {item.subject || 'General'}</Text>
+                            </View>
+                          </View>
+                          <Pressable onPress={() => toggleQuizStatus(item)}>
+                            <Badge label={isPublished ? 'LIVE' : 'DRAFT'} variant={isPublished ? 'success' : 'info'} size="sm" />
+                          </Pressable>
+                        </View>
+
+                        <View style={styles.cardInfoDivider} />
+
+                        <View style={{ flexDirection: 'row', gap: 8, marginVertical: 8, flexWrap: 'wrap' }}>
+                          <Badge label={`Class ${item.classLevel || 8}`} variant="info" size="sm" />
+                          <Badge label={`${item.timeLimitMinutes || 15}m limit`} variant="warning" size="sm" />
+                          <Badge label={`${item.totalQuestions || 10} questions`} variant="success" size="sm" />
+                        </View>
+
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: borderColor }}>
+                          <Pressable onPress={() => toggleQuizStatus(item)} style={[styles.cardBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9' }]}>
+                            <Text style={{ color: textColor, fontWeight: '700', fontSize: 12, fontFamily: 'monospace' }}>{isPublished ? 'Set Draft' : 'Publish Live'}</Text>
+                          </Pressable>
+                          <Pressable onPress={() => handleDeleteQuiz(item)} style={[styles.cardBtn, { backgroundColor: '#ef4444' }]}>
+                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Delete</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'title', title: 'Quiz Title', flex: 1.5, render: (item) => <Text style={{ color: textColor, fontWeight: '700' }}>{item.title}</Text> },
+                  { key: 'subject', title: 'Subject', flex: 1 },
+                  { key: 'classLevel', title: 'Class', flex: 0.8, render: (item) => `Class ${item.classLevel}` },
+                  { key: 'timeLimitMinutes', title: 'Duration', flex: 0.8, render: (item) => `${item.timeLimitMinutes} min` },
+                  {
+                    key: 'isPublished',
+                    title: 'Status',
+                    flex: 1,
+                    render: (item) => (
+                      <Pressable onPress={() => toggleQuizStatus(item)}>
+                        <Badge label={item.isPublished ? 'LIVE' : 'DRAFT'} variant={item.isPublished ? 'success' : 'info'} size="sm" />
+                      </Pressable>
+                    ),
+                  },
+                  {
+                    key: 'actions',
+                    title: 'Actions',
+                    flex: 1,
+                    render: (item) => (
+                      <Pressable onPress={() => handleDeleteQuiz(item)} style={styles.actionBtnDel}>
+                        <Text style={styles.btnTextText}>Delete</Text>
+                      </Pressable>
+                    ),
+                  },
+                ]}
+                data={filteredQuizzesList}
+                keyExtractor={(item, idx) => item.id || String(idx)}
+              />
+            )}
           </View>
         )}
 
         {/* TAB 6: ATTEMPTS */}
         {activeTab === 'attempts' && (
           <View style={{ gap: spacing.md }}>
-            <Text style={[styles.cardHeading, { color: textColor }]}>Student Attempt Logs & Results</Text>
-            <DataTable
-              columns={[
-                { key: 'studentName', title: 'Student Name', flex: 1, render: (item) => item.studentName || item.studentId || 'Student' },
-                { key: 'quizTitle', title: 'Quiz Title', flex: 1.2, render: (item) => item.quizTitle || 'Quiz' },
-                { key: 'subject', title: 'Subject', flex: 1 },
-                { key: 'percentage', title: 'Score %', flex: 1, render: (item) => <Text style={{ color: item.percentage >= 50 ? '#10b981' : '#f87171', fontWeight: '800', fontFamily: 'monospace' }}>{Math.round(item.percentage ?? 0)}%</Text> },
-                { key: 'completedAt', title: 'Submission Date', flex: 1, render: (item) => (item.completedAt ? new Date(item.completedAt).toLocaleDateString() : 'Recent') },
-              ]}
-              data={attemptsList}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
+            <View style={styles.tabHeaderRow}>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Student Attempt Logs & Results</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Review quiz submissions, score percentages & completion dates</Text>
+              </View>
+            </View>
+
+            {/* View Mode & Search Controls */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <TextInput
+                  placeholder="Filter attempt logs by student, quiz title, subject..."
+                  value={attemptSearchQuery}
+                  onChangeText={setAttemptSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setAttemptViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: attemptViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: attemptViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: attemptViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Cards Grid ]
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAttemptViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: attemptViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: attemptViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: attemptViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {attemptViewMode === 'cards' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs }}>
+                {filteredAttemptsList.length === 0 ? (
+                  <Text style={{ color: subTextColor, textAlign: 'center', width: '100%', marginVertical: 20 }}>No quiz attempts match query.</Text>
+                ) : (
+                  filteredAttemptsList.map((item: any, idx: number) => {
+                    const pct = Math.round(item.percentage ?? 0);
+                    const isPassed = pct >= 40;
+
+                    return (
+                      <View key={item.id || idx} style={[styles.entityCard, { backgroundColor: cardBg, borderColor, width: cardWidth }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(99, 102, 241, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#6366f1' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: '#6366f1', fontFamily: 'monospace' }}>LOG</Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>{item.studentName || item.studentId || 'Student'}</Text>
+                              <Text style={{ fontSize: 12, color: '#6366f1', fontWeight: '700', fontFamily: 'monospace' }}>SUBJECT: {item.subject || 'General'}</Text>
+                            </View>
+                          </View>
+                          <Badge
+                            label={`${pct}% ${isPassed ? 'PASSED' : 'FAILED'}`}
+                            variant={isPassed ? 'success' : 'error'}
+                            size="sm"
+                          />
+                        </View>
+
+                        <View style={styles.cardInfoDivider} />
+
+                        <View style={{ gap: 6, marginVertical: 8 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: textColor, fontFamily: 'monospace' }}>QUIZ: {item.quizTitle || 'Quiz Attempt'}</Text>
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>
+                            SCORE: {item.score ?? 0} / {item.totalMarks ?? 0} ({pct}%)
+                          </Text>
+                          <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace' }}>
+                            SUBMITTED: {item.completedAt ? new Date(item.completedAt).toLocaleString() : 'Recent'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'studentName', title: 'Student Name', flex: 1, render: (item) => item.studentName || item.studentId || 'Student' },
+                  { key: 'quizTitle', title: 'Quiz Title', flex: 1.2, render: (item) => item.quizTitle || 'Quiz' },
+                  { key: 'subject', title: 'Subject', flex: 1 },
+                  { key: 'percentage', title: 'Score %', flex: 1, render: (item) => <Text style={{ color: item.percentage >= 50 ? '#10b981' : '#f87171', fontWeight: '800', fontFamily: 'monospace' }}>{Math.round(item.percentage ?? 0)}%</Text> },
+                  { key: 'completedAt', title: 'Submission Date', flex: 1, render: (item) => (item.completedAt ? new Date(item.completedAt).toLocaleDateString() : 'Recent') },
+                ]}
+                data={filteredAttemptsList}
+                keyExtractor={(item, idx) => item.id || String(idx)}
+              />
+            )}
           </View>
         )}
 
-        {/* TAB 7: DATABASE EXPLORER */}
+        {/* TAB 7: DATABASE EXPLORER (Desktop Optimized Split-Pane Interface) */}
         {activeTab === 'database' && (
           <View style={{ gap: spacing.md }}>
-            <Text style={[styles.cardHeading, { color: textColor }]}>Firestore Collection Schema Explorer</Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-              {['users', 'quizzes', 'attempts'].map((col) => (
+            <View style={styles.tabHeaderRow}>
+              <View>
+                <Text style={[styles.cardHeading, { color: textColor }]}>Firestore Collection Schema & DB Inspector</Text>
+                <Text style={{ color: subTextColor, fontSize: 12 }}>Desktop-optimized dual pane document navigator & live JSON inspector</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable
-                  key={col}
-                  onPress={() => setSelectedCollection(col as any)}
-                  style={[styles.colChip, { backgroundColor: selectedCollection === col ? '#4f46e5' : cardBg, borderColor }]}
+                  onPress={() => setDbViewMode('cards')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: dbViewMode === 'cards' ? '#4f46e5' : cardBg,
+                      borderColor: dbViewMode === 'cards' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
                 >
-                  <Text style={{ color: selectedCollection === col ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
-                    collection('{col}')
+                  <Text style={{ color: dbViewMode === 'cards' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Cards Grid ]
                   </Text>
                 </Pressable>
-              ))}
+                <Pressable
+                  onPress={() => setDbViewMode('table')}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: dbViewMode === 'table' ? '#4f46e5' : cardBg,
+                      borderColor: dbViewMode === 'table' ? '#4f46e5' : borderColor,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: dbViewMode === 'table' ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                    [ Table View ]
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
-            <DataTable
-              columns={[
-                { key: 'id', title: 'Doc ID', flex: 1, render: (item) => <Text style={{ fontWeight: '700', color: '#6366f1', fontFamily: 'monospace' }}>{item.id}</Text> },
-                { key: 'title', title: 'Document Identifier', flex: 1, render: (item) => item.title || item.fullName || item.username || 'Record' },
-                {
-                  key: 'raw',
-                  title: 'Schema Inspection',
-                  flex: 1.2,
-                  render: (item) => (
-                    <Pressable onPress={() => setInspectDoc(item)} style={styles.actionBtnEdit}>
-                      <Text style={styles.btnTextText}>Inspect JSON</Text>
+            {/* Collection Selection & Search Bar */}
+            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12, alignItems: isTablet ? 'center' : 'stretch', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                {(['users', 'quizzes', 'attempts'] as const).map((col) => {
+                  const count = col === 'users' ? usersList.length : col === 'quizzes' ? quizzesList.length : attemptsList.length;
+                  const isSel = selectedCollection === col;
+                  return (
+                    <Pressable
+                      key={col}
+                      onPress={() => {
+                        setSelectedCollection(col);
+                        setInspectDoc(null);
+                        setIsEditingJson(false);
+                      }}
+                      style={[
+                        styles.colChip,
+                        {
+                          backgroundColor: isSel ? '#4f46e5' : cardBg,
+                          borderColor: isSel ? '#4f46e5' : borderColor,
+                        },
+                      ]}
+                    >
+                      <Text style={{ color: isSel ? '#ffffff' : subTextColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>
+                        collection('{col}') [{count}]
+                      </Text>
                     </Pressable>
-                  ),
-                },
-              ]}
-              data={selectedCollection === 'users' ? usersList : selectedCollection === 'quizzes' ? quizzesList : attemptsList}
-              keyExtractor={(item, idx) => item.id || String(idx)}
-            />
-
-            {inspectDoc && (
-              <View style={[styles.jsonCard, { backgroundColor: cardBg, borderColor }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={{ color: textColor, fontWeight: '800', fontFamily: 'monospace' }}>Raw Document JSON: {inspectDoc.id}</Text>
-                  <Pressable onPress={() => setInspectDoc(null)}>
-                    <Text style={{ color: '#f87171', fontWeight: '800', fontFamily: 'monospace' }}>Close [X]</Text>
-                  </Pressable>
-                </View>
-                <ScrollView style={{ maxHeight: 220 }}>
-                  <Text style={{ color: '#818cf8', fontFamily: 'monospace', fontSize: 12 }}>
-                    {JSON.stringify(inspectDoc, null, 2)}
-                  </Text>
-                </ScrollView>
+                  );
+                })}
               </View>
-            )}
+              <View style={{ flex: 1, minWidth: 240 }}>
+                <TextInput
+                  placeholder="Search document ID or schema fields..."
+                  value={dbSearchQuery}
+                  onChangeText={setDbSearchQuery}
+                  placeholderTextColor={subTextColor}
+                  style={[styles.formInput, { color: textColor, borderColor }]}
+                />
+              </View>
+            </View>
+
+            {/* Split View Container for Desktop */}
+            <View style={{ flexDirection: isTablet || isDesktop ? 'row' : 'column', gap: 16, alignItems: 'flex-start', marginTop: 6 }}>
+              {/* LEFT PANE: Document List / Cards */}
+              <View style={{ flex: 1, width: '100%', gap: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: subTextColor, fontFamily: 'monospace' }}>
+                    DOCUMENTS IN '{selectedCollection.toUpperCase()}' ({filteredDbList.length})
+                  </Text>
+                </View>
+
+                {dbViewMode === 'cards' ? (
+                  <View style={{ gap: 10, maxHeight: 600 }}>
+                    <ScrollView style={{ maxHeight: 580 }} showsVerticalScrollIndicator={true}>
+                      <View style={{ gap: 10, paddingRight: 4 }}>
+                        {filteredDbList.length === 0 ? (
+                          <Text style={{ color: subTextColor, textAlign: 'center', marginVertical: 20 }}>No documents match query.</Text>
+                        ) : (
+                          filteredDbList.map((item: any, idx: number) => {
+                            const isSelected = (inspectDoc && inspectDoc.id === item.id) || (!inspectDoc && idx === 0);
+                            const keyCount = Object.keys(item).length;
+                            const title = item.title || item.fullName || item.username || item.quizTitle || item.id;
+
+                            return (
+                              <Pressable
+                                key={item.id || idx}
+                                onPress={() => {
+                                  setInspectDoc(item);
+                                  setIsEditingJson(false);
+                                }}
+                                style={[
+                                  styles.entityCard,
+                                  {
+                                    backgroundColor: isSelected ? (isDark ? 'rgba(79, 70, 229, 0.25)' : '#e0e7ff') : cardBg,
+                                    borderColor: isSelected ? '#6366f1' : borderColor,
+                                    borderWidth: isSelected ? 2 : 1,
+                                    padding: 12,
+                                  },
+                                ]}
+                              >
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? '#6366f1' : textColor, fontFamily: 'monospace' }} numberOfLines={1}>
+                                    DOC: {item.id}
+                                  </Text>
+                                  <Badge label={`${keyCount} keys`} variant={isSelected ? 'info' : 'success'} size="sm" />
+                                </View>
+                                <Text style={{ fontSize: 12, color: subTextColor, marginTop: 4, fontFamily: 'monospace' }} numberOfLines={1}>
+                                  IDENTIFIER: <Text style={{ color: textColor, fontWeight: '700' }}>{title}</Text>
+                                </Text>
+                              </Pressable>
+                            );
+                          })
+                        )}
+                      </View>
+                    </ScrollView>
+                  </View>
+                ) : (
+                  <DataTable
+                    columns={[
+                      { key: 'id', title: 'Doc ID', flex: 1, render: (item) => <Text style={{ fontWeight: '700', color: '#6366f1', fontFamily: 'monospace' }}>{item.id}</Text> },
+                      { key: 'title', title: 'Identifier', flex: 1, render: (item) => item.title || item.fullName || item.username || 'Record' },
+                      {
+                        key: 'raw',
+                        title: 'Select',
+                        flex: 0.8,
+                        render: (item) => (
+                          <Pressable
+                            onPress={() => {
+                              setInspectDoc(item);
+                              setIsEditingJson(false);
+                            }}
+                            style={[styles.actionBtnEdit, { backgroundColor: inspectDoc?.id === item.id ? '#10b981' : '#6366f1' }]}
+                          >
+                            <Text style={styles.btnTextText}>{inspectDoc?.id === item.id ? 'Selected' : 'Inspect'}</Text>
+                          </Pressable>
+                        ),
+                      },
+                    ]}
+                    data={filteredDbList}
+                    keyExtractor={(item, idx) => item.id || String(idx)}
+                  />
+                )}
+              </View>
+
+              {/* RIGHT PANE: Live Desktop JSON Inspector & Editor */}
+              <View style={{ flex: isTablet || isDesktop ? 1.3 : 1, width: '100%' }}>
+                {activeInspectDoc ? (
+                  <View style={[styles.jsonCard, { backgroundColor: cardBg, borderColor: '#6366f1', borderWidth: 2, padding: 16, borderRadius: 16, marginTop: 0 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: 'rgba(99, 102, 241, 0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#6366f1' }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#6366f1', fontFamily: 'monospace' }}>JSON</Text>
+                        </View>
+                        <View>
+                          <Text style={{ color: textColor, fontWeight: '900', fontFamily: 'monospace', fontSize: 14 }}>
+                            {activeInspectDoc.id}
+                          </Text>
+                          <Text style={{ color: '#6366f1', fontSize: 11, fontWeight: '700', fontFamily: 'monospace' }}>
+                            Collection: {selectedCollection} ({Object.keys(activeInspectDoc).length} fields)
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {!isEditingJson ? (
+                          <Pressable
+                            onPress={() => {
+                              setEditJsonText(JSON.stringify(activeInspectDoc, null, 2));
+                              setIsEditingJson(true);
+                            }}
+                            style={[styles.actionChip, { backgroundColor: '#4f46e5', borderColor: '#4f46e5' }]}
+                          >
+                            <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 11, fontFamily: 'monospace' }}>
+                              Edit Raw JSON
+                            </Text>
+                          </Pressable>
+                        ) : (
+                          <Pressable
+                            onPress={() => setIsEditingJson(false)}
+                            style={[styles.actionChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', borderColor }]}
+                          >
+                            <Text style={{ color: textColor, fontWeight: '800', fontSize: 11, fontFamily: 'monospace' }}>
+                              Cancel
+                            </Text>
+                          </Pressable>
+                        )}
+                        <Pressable
+                          onPress={() => setInspectDoc(null)}
+                          style={[styles.actionChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', borderColor }]}
+                        >
+                          <Text style={{ color: textColor, fontWeight: '800', fontSize: 11, fontFamily: 'monospace' }}>
+                            Close Pane
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeleteDbDocument(activeInspectDoc)}
+                          style={[styles.actionChip, { backgroundColor: '#ef4444', borderColor: '#ef4444' }]}
+                        >
+                          <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 11, fontFamily: 'monospace' }}>
+                            Delete Doc
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+
+                    <View style={styles.cardInfoDivider} />
+
+                    {isEditingJson ? (
+                      <View style={{ gap: 10, marginTop: 10 }}>
+                        <Text style={{ color: subTextColor, fontSize: 11, fontFamily: 'monospace', fontWeight: '700' }}>
+                          RAW JSON SCHEMA EDITOR (Ensure valid JSON syntax before commit):
+                        </Text>
+                        <TextInput
+                          multiline
+                          value={editJsonText}
+                          onChangeText={setEditJsonText}
+                          style={{
+                            height: 380,
+                            backgroundColor: isDark ? '#09051b' : '#f8fafc',
+                            color: isDark ? '#818cf8' : '#1e1b4b',
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            padding: 12,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: '#6366f1',
+                            textAlignVertical: 'top',
+                          }}
+                        />
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                          <CustomButton
+                            title="Commit Changes"
+                            onPress={handleSaveJson}
+                            variant="primary"
+                            size="sm"
+                            fullWidth={false}
+                          />
+                        </View>
+                      </View>
+                    ) : (
+                      <ScrollView style={{ maxHeight: 420, marginTop: 8 }} showsVerticalScrollIndicator={true}>
+                        <View style={{ backgroundColor: isDark ? '#09051b' : '#f8fafc', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#e2e8f0' }}>
+                          <Text style={{ color: isDark ? '#a5b4fc' : '#312e81', fontFamily: 'monospace', fontSize: 12, lineHeight: 18 }}>
+                            {JSON.stringify(activeInspectDoc, null, 2)}
+                          </Text>
+                        </View>
+                      </ScrollView>
+                    )}
+                  </View>
+                ) : (
+                  <View style={[styles.jsonCard, { backgroundColor: cardBg, borderColor, padding: 30, alignItems: 'center', justifyContent: 'center', minHeight: 280 }]}>
+                    <Text style={{ color: textColor, fontWeight: '800', fontSize: 14, fontFamily: 'monospace', textAlign: 'center' }}>
+                      Select a Document to Inspect Schema
+                    </Text>
+                    <Text style={{ color: subTextColor, fontSize: 12, textAlign: 'center', marginTop: 6, maxWidth: 300, fontFamily: 'monospace' }}>
+                      Click on any document entry in the left panel to inspect its JSON structure and raw values.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
           </View>
         )}
 
@@ -1059,6 +2034,86 @@ export function SuperAdminDashboardScreen({ navigation }: Props) {
         )}
 
       </View>
+
+      {/* GLOBAL CONFIRMATION POPUP MODAL */}
+      <Modal visible={confirmDeleteModal.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: cardBg, borderColor: '#ef4444', borderWidth: 2, maxWidth: 480 }]}>
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(239, 68, 68, 0.15)', borderWidth: 1, borderColor: '#ef4444', marginBottom: 10 }}>
+                <Text style={{ fontSize: 11, fontWeight: '900', color: '#ef4444', fontFamily: 'monospace' }}>CRITICAL_ACTION</Text>
+              </View>
+              <Badge label="PERMANENT DELETION WARNING" variant="error" size="sm" />
+              <Text style={[styles.modalTitleText, { color: textColor, marginTop: 8, fontSize: 17, textAlign: 'center', fontFamily: 'monospace' }]}>
+                {confirmDeleteModal.title}
+              </Text>
+            </View>
+
+            <Text style={{ color: subTextColor, fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 20, fontFamily: 'monospace' }}>
+              {confirmDeleteModal.message}
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>
+              <Pressable
+                onPress={() => setConfirmDeleteModal((prev) => ({ ...prev, visible: false }))}
+                style={[styles.cardBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', paddingVertical: 10 }]}
+              >
+                <Text style={{ color: textColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmDeleteModal.onConfirm}
+                style={[styles.cardBtn, { backgroundColor: '#ef4444', paddingVertical: 10 }]}
+              >
+                <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Confirm Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ADMIN RESET PASSWORD MODAL */}
+      <Modal visible={resetModalState.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: cardBg, borderColor: '#ef4444', borderWidth: 2, maxWidth: 460 }]}>
+            <Text style={{ fontSize: 16, fontWeight: '900', color: textColor, fontFamily: 'monospace', marginBottom: 6 }}>
+              Reset Password for @{resetModalState.request?.username}
+            </Text>
+            <Text style={{ fontSize: 12, color: subTextColor, fontFamily: 'monospace', marginBottom: 14 }}>
+              Assign a new initial password for user {resetModalState.request?.fullName}.
+            </Text>
+            <TextInput
+              placeholder="Enter new password (min 4 chars)"
+              value={resetModalState.newPassword}
+              onChangeText={(val) => setResetModalState((prev) => ({ ...prev, newPassword: val }))}
+              placeholderTextColor={subTextColor}
+              style={[styles.formInput, { color: textColor, borderColor, marginBottom: 10 }]}
+              secureTextEntry
+            />
+            <TextInput
+              placeholder="Confirm new password"
+              value={resetModalState.confirmPassword}
+              onChangeText={(val) => setResetModalState((prev) => ({ ...prev, confirmPassword: val }))}
+              placeholderTextColor={subTextColor}
+              style={[styles.formInput, { color: textColor, borderColor, marginBottom: 16 }]}
+              secureTextEntry
+            />
+            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
+              <Pressable
+                onPress={() => setResetModalState({ visible: false, request: null, newPassword: '', confirmPassword: '' })}
+                style={[styles.cardBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9' }]}
+              >
+                <Text style={{ color: textColor, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleResolveResetRequest}
+                style={[styles.cardBtn, { backgroundColor: '#10b981' }]}
+              >
+                <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 12, fontFamily: 'monospace' }}>Update & Resolve</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* MASTER EDIT USER MODAL */}
       <Modal visible={!!editingUser} transparent animationType="fade">
@@ -1267,6 +2322,25 @@ const styles = StyleSheet.create({
   logsCard: { padding: 16, borderRadius: 14, borderWidth: 1, gap: 10 },
   logRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logText: { flex: 1, fontSize: 12, fontWeight: '600', fontFamily: 'monospace' },
+  
+  entityCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  cardInfoDivider: {
+    height: 1,
+    backgroundColor: 'rgba(148, 163, 184, 0.2)',
+    marginVertical: 4,
+  },
+  cardBtn: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   
   // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'center', alignItems: 'center', padding: 20 },

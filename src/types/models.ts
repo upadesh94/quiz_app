@@ -96,6 +96,20 @@ export interface StudentRegistrationRequest {
   rejectedReason?: string;
 }
 
+export interface PasswordResetRequest {
+  id: string;
+  userId?: string;
+  username: string;
+  fullName: string;
+  userRole: UserRole;
+  classLevel?: 8 | 9 | 10;
+  status: 'pending' | 'resolved' | 'rejected';
+  requestedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  newPassword?: string;
+}
+
 export interface SubjectAnalytics {
   subject: string;
   attempts: number;
@@ -184,6 +198,7 @@ export interface TeacherAnalyticsFilters {
   studentId?: string;
   subject?: string;
   quizId?: string;
+  searchQuery?: string;
   startDate?: string;
   endDate?: string;
   resultType?: 'all' | 'passed' | 'failed';
